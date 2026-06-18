@@ -1,0 +1,28 @@
+# Node dependencies
+node_modules/
+Backend/node_modules/
+Frontend/eBookCreator/node_modules/
+
+# Environment files
+.env
+Backend/.env
+Frontend/eBookCreator/.env
+
+# Build output
+Frontend/eBookCreator/dist/
+
+# Uploads and runtime files
+Backend/uploads/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
