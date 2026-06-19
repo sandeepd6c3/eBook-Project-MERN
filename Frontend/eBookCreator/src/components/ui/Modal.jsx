@@ -24,16 +24,16 @@ const Modal = ({ isOpen, onClose, title, children }) => {
       ></div>
 
       {/* Modal Container */}
-      <div className="bg-white border border-[#E5E7EB] w-full max-w-[480px] rounded-[24px] shadow-2xl relative z-10 overflow-hidden transform transition-all duration-300 animate-scaleIn flex flex-col max-h-[90vh]">
+      <div className="bg-bg-secondary border border-border-primary w-full max-w-[480px] rounded-[24px] shadow-2xl relative z-10 overflow-hidden transform transition-all duration-300 animate-scaleIn flex flex-col max-h-[90vh] text-text-primary transition-colors duration-250">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
-          <h3 className="font-display font-light text-xl text-slate-900 tracking-tight">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-border-primary">
+          <h3 className="font-display font-light text-xl text-text-primary tracking-tight">
             {title}
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-800 transition-colors cursor-pointer p-1"
+            className="text-text-muted hover:text-text-primary transition-colors cursor-pointer p-1"
           >
             <svg
               className="w-5.5 h-5.5"

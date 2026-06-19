@@ -6,6 +6,7 @@ import TextAreaField from "../components/ui/TextAreaField";
 import SelectField from "../components/ui/SelectField";
 import Modal from "../components/ui/Modal";
 import Button from "../components/ui/Button";
+import ThemeSwitcher from "../components/ui/ThemeSwitcher";
 import toast from "react-hot-toast";
 
 const API_BASE = "http://localhost:5000/api/books";
@@ -280,28 +281,28 @@ const DashboardPage = () => {
 
   // Render cover component
   const BookCover = ({ title, category, style }) => (
-    <div className="h-44 bg-[#F5F5F4] border-b border-slate-100 flex flex-col justify-between p-5 relative overflow-hidden select-none">
+    <div className="h-44 bg-bg-tertiary border-b border-border-primary flex flex-col justify-between p-5 relative overflow-hidden select-none transition-colors duration-250">
       {/* Decorative publishing grid frame */}
-      <div className="absolute inset-4 border border-slate-300/30 rounded-lg pointer-events-none"></div>
+      <div className="absolute inset-4 border border-border-primary rounded-lg pointer-events-none"></div>
       
-      <span className="text-[8px] font-extrabold uppercase tracking-widest text-slate-400/80 z-10 text-left">
+      <span className="text-[8px] font-extrabold uppercase tracking-widest text-text-muted z-10 text-left">
         {style}
       </span>
 
-      <h4 className="font-display font-light text-slate-800 text-base leading-tight text-center max-w-[80%] mx-auto z-10 line-clamp-3">
+      <h4 className="font-display font-light text-text-primary text-base leading-tight text-center max-w-[80%] mx-auto z-10 line-clamp-3">
         {title}
       </h4>
 
-      <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400 z-10 text-center">
+      <span className="text-[8px] font-bold uppercase tracking-wider text-text-muted z-10 text-center">
         {category}
       </span>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#FAFAF9] font-sans">
+    <div className="min-h-screen bg-bg-primary text-text-primary font-sans transition-colors duration-250">
       {/* Navbar Header */}
-      <header className="sticky top-0 z-40 bg-white border-b border-slate-100 shadow-xs">
+      <header className="sticky top-0 z-40 bg-bg-secondary border-b border-border-primary shadow-xs transition-colors duration-250">
         <div className="max-w-7xl mx-auto px-6 h-18 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-slate-700 to-slate-800 flex items-center justify-center text-white">
@@ -314,24 +315,31 @@ const DashboardPage = () => {
                 />
               </svg>
             </div>
-            <span className="font-display font-bold text-lg tracking-tight text-slate-900">
-              eBook<span className="text-slate-500">AI</span>
+            <span className="font-display font-bold text-lg tracking-tight text-text-primary">
+              eBook<span className="text-text-secondary">AI</span>
             </span>
           </Link>
 
           <div className="flex items-center gap-3">
-            <span className="text-xs font-semibold text-slate-500 hidden sm:inline mr-1">
-              Hello, <strong className="text-slate-800">{user?.username || "Sandeep"}</strong>
+            <ThemeSwitcher />
+            <span className="text-xs font-semibold text-text-secondary hidden sm:inline mr-1">
+              Hello, <strong className="text-text-primary">{user?.username || "Sandeep"}</strong>
             </span>
             <Link
+              to="/discover"
+              className="text-[10px] font-bold uppercase tracking-wider text-text-secondary hover:text-text-primary transition-colors border border-border-primary hover:border-text-primary px-3 py-1.5 rounded-lg cursor-pointer mr-1"
+            >
+              Discover
+            </Link>
+            <Link
               to="/profile"
-              className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 hover:text-indigo-850 transition-colors border border-indigo-100 hover:border-indigo-600 px-3 py-1.5 rounded-lg cursor-pointer bg-indigo-50/30"
+              className="text-[10px] font-bold uppercase tracking-wider text-accent-primary hover:text-accent-hover transition-colors border border-accent-ring hover:border-accent-primary px-3 py-1.5 rounded-lg cursor-pointer bg-accent-primary/10"
             >
               Profile
             </Link>
             <button
               onClick={handleLogout}
-              className="text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-800 transition-colors border border-slate-200 hover:border-slate-800 px-3 py-1.5 rounded-lg cursor-pointer"
+              className="text-[10px] font-bold uppercase tracking-wider text-text-muted hover:text-text-primary transition-colors border border-border-primary hover:border-text-primary px-3 py-1.5 rounded-lg cursor-pointer"
             >
               Log Out
             </button>
@@ -344,69 +352,69 @@ const DashboardPage = () => {
         
         {/* Welcome Section */}
         <div className="mb-8 text-left animate-fadeIn">
-          <h1 className="font-display font-light text-3xl sm:text-4xl text-slate-900 tracking-tight mb-1.5">
+          <h1 className="font-display font-light text-3xl sm:text-4xl text-text-primary tracking-tight mb-1.5">
             Hello, <span className="font-normal">{user?.username || "Sandeep"}</span> 👋
           </h1>
-          <p className="text-slate-400 text-xs sm:text-sm font-medium mb-3 leading-relaxed">
+          <p className="text-text-secondary text-xs sm:text-sm font-medium mb-3 leading-relaxed">
             Continue building amazing eBooks with AI.
           </p>
-          <div className="text-[9px] uppercase font-bold tracking-widest text-slate-400 bg-slate-50 border border-slate-100 rounded-lg py-1 px-3 inline-block shadow-xs">
-            You have: <strong className="text-slate-700">{totalBooks} {totalBooks === 1 ? "Book" : "Books"}</strong>
-            <span className="mx-2 text-slate-200">|</span>
-            <strong className="text-slate-700">{publishedBooks} Published</strong>
+          <div className="text-[9px] uppercase font-bold tracking-widest text-text-muted bg-bg-tertiary border border-border-primary rounded-lg py-1 px-3 inline-block shadow-xs">
+            You have: <strong className="text-text-primary">{totalBooks} {totalBooks === 1 ? "Book" : "Books"}</strong>
+            <span className="mx-2 text-border-primary">|</span>
+            <strong className="text-text-primary">{publishedBooks} Published</strong>
           </div>
         </div>
 
         {/* High-Impact Statistics Grid */}
         <div className="grid grid-cols-3 gap-5 mb-8">
           {/* Total Books */}
-          <div className="bg-white border border-[#E5E7EB] rounded-[16px] p-5 shadow-xs flex flex-col justify-between min-h-[110px] text-left">
+          <div className="bg-bg-secondary border border-border-primary rounded-[16px] p-5 shadow-xs flex flex-col justify-between min-h-[110px] text-left transition-colors duration-250">
             <div>
-              <svg className="w-4.5 h-4.5 text-slate-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4.5 h-4.5 text-text-muted mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18 18.246 18.477 16.5 18.477s-3.332.477-4.5 1.253" />
               </svg>
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block mb-1">
+              <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-widest block mb-1">
                 Total Books
               </span>
             </div>
-            <span className="font-display text-4xl sm:text-5xl font-light text-slate-800 leading-none">
+            <span className="font-display text-4xl sm:text-5xl font-light text-text-primary leading-none">
               {String(totalBooks).padStart(2, "0")}
             </span>
           </div>
 
           {/* AI Chapters */}
-          <div className="bg-white border border-[#E5E7EB] rounded-[16px] p-5 shadow-xs flex flex-col justify-between min-h-[110px] text-left">
+          <div className="bg-bg-secondary border border-border-primary rounded-[16px] p-5 shadow-xs flex flex-col justify-between min-h-[110px] text-left transition-colors duration-250">
             <div>
-              <svg className="w-4.5 h-4.5 text-slate-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4.5 h-4.5 text-text-muted mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 002-2h2a2 2 0 002 2m-3 7h3m-3 4h3m-6-4h.01M9 16.01H9" />
               </svg>
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block mb-1">
+              <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-widest block mb-1">
                 AI Chapters
               </span>
             </div>
-            <span className="font-display text-4xl sm:text-5xl font-light text-slate-800 leading-none">
+            <span className="font-display text-4xl sm:text-5xl font-light text-text-primary leading-none">
               {String(totalChapters).padStart(2, "0")}
             </span>
           </div>
 
           {/* Published */}
-          <div className="bg-white border border-[#E5E7EB] rounded-[16px] p-5 shadow-xs flex flex-col justify-between min-h-[110px] text-left">
+          <div className="bg-bg-secondary border border-border-primary rounded-[16px] p-5 shadow-xs flex flex-col justify-between min-h-[110px] text-left transition-colors duration-250">
             <div>
-              <svg className="w-4.5 h-4.5 text-slate-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4.5 h-4.5 text-text-muted mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block mb-1">
+              <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-widest block mb-1">
                 Published
               </span>
             </div>
-            <span className="font-display text-4xl sm:text-5xl font-light text-slate-800 leading-none">
+            <span className="font-display text-4xl sm:text-5xl font-light text-text-primary leading-none">
               {String(publishedBooks).padStart(2, "0")}
             </span>
           </div>
         </div>
 
         {/* Wider Search & Control Bar */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8 bg-white border border-[#E5E7EB] rounded-[16px] p-4 shadow-xs">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8 bg-bg-secondary border border-border-primary rounded-[16px] p-4 shadow-xs transition-colors duration-250">
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
             {/* Search Input (450px wide on desktop) */}
             <div className="w-full sm:w-[450px] relative">
@@ -415,9 +423,9 @@ const DashboardPage = () => {
                 placeholder="Search eBooks..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-[42px] pl-10 pr-4 bg-[#FAFAF9] border border-slate-200 focus:border-slate-800 rounded-xl text-xs font-sans placeholder-slate-400 outline-none transition-all"
+                className="w-full h-[42px] pl-10 pr-4 bg-bg-primary text-text-primary border border-border-primary focus:border-accent-primary rounded-xl text-xs font-sans placeholder-text-muted outline-none transition-all duration-250"
               />
-              <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+              <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
@@ -429,16 +437,16 @@ const DashboardPage = () => {
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="w-full h-[42px] pl-4 pr-10 bg-[#FAFAF9] border border-slate-200 focus:border-slate-800 rounded-xl text-xs font-sans text-slate-700 outline-none appearance-none cursor-pointer transition-all"
+                className="w-full h-[42px] pl-4 pr-10 bg-bg-primary text-text-primary border border-border-primary focus:border-accent-primary rounded-xl text-xs font-sans outline-none appearance-none cursor-pointer transition-all duration-250"
               >
-                <option value="">All Categories</option>
+                <option value="" className="bg-bg-primary text-text-primary">All Categories</option>
                 {categories.map((cat, idx) => (
-                  <option key={idx} value={cat}>
+                  <option key={idx} value={cat} className="bg-bg-primary text-text-primary">
                     {cat}
                   </option>
                 ))}
               </select>
-              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                 </svg>
@@ -463,28 +471,28 @@ const DashboardPage = () => {
           /* Loading Skeletons */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((idx) => (
-              <div key={idx} className="bg-white border border-[#E5E7EB] rounded-[20px] h-[340px] animate-pulse flex flex-col">
-                <div className="h-44 bg-slate-50 rounded-t-[20px]"></div>
+              <div key={idx} className="bg-bg-secondary border border-border-primary rounded-[20px] h-[340px] animate-pulse flex flex-col">
+                <div className="h-44 bg-bg-tertiary rounded-t-[20px]"></div>
                 <div className="p-5 flex-1 flex flex-col gap-3">
-                  <div className="h-4 bg-slate-100 rounded w-2/3"></div>
-                  <div className="h-3 bg-slate-100 rounded w-full"></div>
-                  <div className="h-3 bg-[#FAFAF9] rounded w-full mt-auto"></div>
+                  <div className="h-4 bg-bg-tertiary rounded w-2/3"></div>
+                  <div className="h-3 bg-bg-tertiary rounded w-full"></div>
+                  <div className="h-3 bg-bg-tertiary rounded w-full mt-auto"></div>
                 </div>
               </div>
             ))}
           </div>
         ) : books.length === 0 ? (
           /* Main Empty State */
-          <div className="w-full bg-white border border-[#E5E7EB] rounded-[24px] p-10 sm:p-16 text-center shadow-xs flex flex-col items-center max-w-xl mx-auto mt-6 animate-fadeIn">
-            <div className="h-16 w-16 bg-slate-50 border border-slate-100 text-slate-500 rounded-full flex items-center justify-center mb-6">
+          <div className="w-full bg-bg-secondary border border-border-primary rounded-[24px] p-10 sm:p-16 text-center shadow-xs flex flex-col items-center max-w-xl mx-auto mt-6 animate-fadeIn transition-colors duration-250">
+            <div className="h-16 w-16 bg-bg-tertiary border border-border-primary text-text-secondary rounded-full flex items-center justify-center mb-6">
               <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18 18.246 18.477 16.5 18.477s-3.332.477-4.5 1.253" />
               </svg>
             </div>
-            <h3 className="font-display font-light text-2xl text-slate-900 mb-2">
+            <h3 className="font-display font-light text-2xl text-text-primary mb-2">
               Start Your First Publication
             </h3>
-            <p className="text-slate-400 text-xs sm:text-sm font-medium mb-8 max-w-sm leading-relaxed">
+            <p className="text-text-secondary text-xs sm:text-sm font-medium mb-8 max-w-sm leading-relaxed">
               Unlock the power of AI to outline and draft complete eBooks from a single prompt idea.
             </p>
             <Button
@@ -501,9 +509,9 @@ const DashboardPage = () => {
             {/* Section 1: Continue Writing (Drafts) */}
             {draftBooks.length > 0 && (
               <div className="animate-fadeIn">
-                <h3 className="font-display font-light text-xl sm:text-2xl text-slate-900 tracking-tight mb-6 flex items-center gap-2.5">
+                <h3 className="font-display font-light text-xl sm:text-2xl text-text-primary tracking-tight mb-6 flex items-center gap-2.5">
                   Continue Writing
-                  <span className="h-5 px-2 bg-slate-100 text-slate-500 rounded-md text-[9px] font-extrabold uppercase tracking-widest flex items-center justify-center border border-slate-200/40">
+                  <span className="h-5 px-2 bg-bg-tertiary text-text-secondary rounded-md text-[9px] font-extrabold uppercase tracking-widest flex items-center justify-center border border-border-primary">
                     Drafts ({draftBooks.length})
                   </span>
                 </h3>
@@ -513,37 +521,37 @@ const DashboardPage = () => {
                     return (
                       <div
                         key={book._id}
-                        className="bg-white border border-[#E5E7EB] rounded-[20px] shadow-xs hover:shadow-xl hover:shadow-slate-100/50 hover:-translate-y-1.5 hover:scale-[1.02] transition-all duration-300 ease-out overflow-hidden flex flex-col min-h-[380px] group"
+                        className="bg-bg-secondary border border-border-primary rounded-[20px] shadow-xs hover:shadow-lg transition-all duration-300 ease-out overflow-hidden flex flex-col min-h-[380px] group"
                       >
                         <BookCover title={book.title} category={category} style={style} />
                         
                         <div className="p-5 flex-1 flex flex-col justify-between">
                           <div>
                             {/* Meta stats bar */}
-                            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 mb-3 text-slate-400 text-[10px] font-medium">
-                              <span className="font-bold text-slate-600 uppercase tracking-wider">
+                            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 mb-3 text-text-muted text-[10px] font-medium">
+                              <span className="font-bold text-text-primary uppercase tracking-wider">
                                 {book.chapters?.length || 0} {book.chapters?.length === 1 ? "Chapter" : "Chapters"}
                               </span>
-                              <span className="text-slate-200">•</span>
+                              <span className="text-border-primary">•</span>
                               <span>
                                 {book.chapters?.length > 0 ? (book.chapters.length * 1250).toLocaleString() + " Words" : "0 Words"}
                               </span>
-                              <span className="text-slate-200">•</span>
-                              <span className="px-1.5 py-0.5 rounded-md text-[8px] font-extrabold uppercase bg-slate-50 border border-slate-200/40 text-slate-400">
+                              <span className="text-border-primary">•</span>
+                              <span className="px-1.5 py-0.5 rounded-md text-[8px] font-extrabold uppercase bg-bg-tertiary border border-border-primary text-text-muted">
                                 Draft
                               </span>
                             </div>
                             
-                            <p className="text-slate-400 text-xs line-clamp-2 leading-relaxed font-medium mb-2">
+                            <p className="text-text-secondary text-xs line-clamp-2 leading-relaxed font-medium mb-2">
                               {prompt || "No prompt specified."}
                             </p>
                           </div>
 
-                          <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-50">
+                          <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border-primary">
                             <Link to={`/editor?bookId=${book._id}`} className="flex-1">
                               <Button
                                 variant="secondary"
-                                className="w-full h-[36px] text-[9px] font-bold tracking-wider rounded-lg border-slate-200 hover:border-slate-800 text-slate-700 hover:text-slate-900 transition-all flex items-center justify-center uppercase"
+                                className="w-full h-[36px] text-[9px] font-bold tracking-wider rounded-lg border-border-primary hover:border-text-primary text-text-secondary hover:text-text-primary transition-all flex items-center justify-center uppercase"
                               >
                                 Continue Writing
                               </Button>
@@ -552,7 +560,7 @@ const DashboardPage = () => {
                             <Link to={`/view-book/${book._id}`}>
                               <Button
                                 variant="secondary"
-                                className="h-[36px] px-4 text-[9px] font-bold tracking-wider rounded-lg border-slate-200 hover:border-slate-800 text-slate-700 hover:text-slate-900 transition-all flex items-center justify-center uppercase"
+                                className="h-[36px] px-4 text-[9px] font-bold tracking-wider rounded-lg border-border-primary hover:border-text-primary text-text-secondary hover:text-text-primary transition-all flex items-center justify-center uppercase"
                               >
                                 Preview
                               </Button>
@@ -562,7 +570,7 @@ const DashboardPage = () => {
                               type="button"
                               onClick={(e) => openDeleteDialog(book, e)}
                               title="Delete eBook"
-                              className="h-[36px] w-[36px] border border-slate-200 hover:border-red-500 text-slate-400 hover:text-red-500 rounded-lg flex items-center justify-center transition-all cursor-pointer"
+                              className="h-[36px] w-[36px] border border-border-primary hover:border-red-500 text-text-muted hover:text-red-500 rounded-lg flex items-center justify-center transition-all cursor-pointer bg-transparent"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -580,9 +588,9 @@ const DashboardPage = () => {
             {/* Section 2: Recent Activity / Published Books */}
             {publishedBooksList.length > 0 && (
               <div className="animate-fadeIn">
-                <h3 className="font-display font-light text-xl sm:text-2xl text-slate-900 tracking-tight mb-6 flex items-center gap-2.5">
+                <h3 className="font-display font-light text-xl sm:text-2xl text-text-primary tracking-tight mb-6 flex items-center gap-2.5">
                   Published Books
-                  <span className="h-5 px-2 bg-emerald-50 text-emerald-600 rounded-md text-[9px] font-extrabold uppercase tracking-widest flex items-center justify-center border border-emerald-100/40">
+                  <span className="h-5 px-2 bg-[#10b981]/10 text-[#10b981] rounded-md text-[9px] font-extrabold uppercase tracking-widest flex items-center justify-center border border-[#10b981]/20">
                     Published ({publishedBooksList.length})
                   </span>
                 </h3>
@@ -592,37 +600,37 @@ const DashboardPage = () => {
                     return (
                       <div
                         key={book._id}
-                        className="bg-white border border-[#E5E7EB] rounded-[20px] shadow-xs hover:shadow-xl hover:shadow-slate-100/50 hover:-translate-y-1.5 hover:scale-[1.02] transition-all duration-300 ease-out overflow-hidden flex flex-col min-h-[380px] group"
+                        className="bg-bg-secondary border border-border-primary rounded-[20px] shadow-xs hover:shadow-lg transition-all duration-300 ease-out overflow-hidden flex flex-col min-h-[380px] group"
                       >
                         <BookCover title={book.title} category={category} style={style} />
                         
                         <div className="p-5 flex-1 flex flex-col justify-between">
                           <div>
                             {/* Meta stats bar */}
-                            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 mb-3 text-slate-400 text-[10px] font-medium">
-                              <span className="font-bold text-slate-600 uppercase tracking-wider">
+                            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 mb-3 text-text-muted text-[10px] font-medium">
+                              <span className="font-bold text-text-primary uppercase tracking-wider">
                                 {book.chapters?.length || 0} {book.chapters?.length === 1 ? "Chapter" : "Chapters"}
                               </span>
-                              <span className="text-slate-200">•</span>
+                              <span className="text-border-primary">•</span>
                               <span>
                                 {book.chapters?.length > 0 ? (book.chapters.length * 1250).toLocaleString() + " Words" : "0 Words"}
                               </span>
-                              <span className="text-slate-200">•</span>
-                              <span className="px-1.5 py-0.5 rounded-md text-[8px] font-extrabold uppercase bg-emerald-50 border border-emerald-150 text-emerald-600">
+                              <span className="text-border-primary">•</span>
+                              <span className="px-1.5 py-0.5 rounded-md text-[8px] font-extrabold uppercase bg-[#10b981]/10 border border-[#10b981]/25 text-[#10b981]">
                                 Published
                               </span>
                             </div>
                             
-                            <p className="text-slate-400 text-xs line-clamp-2 leading-relaxed font-medium mb-2">
+                            <p className="text-text-secondary text-xs line-clamp-2 leading-relaxed font-medium mb-2">
                               {prompt || "No prompt specified."}
                             </p>
                           </div>
 
-                          <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-50">
+                          <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border-primary">
                             <Link to={`/editor?bookId=${book._id}`} className="flex-1">
                               <Button
                                 variant="secondary"
-                                className="w-full h-[36px] text-[9px] font-bold tracking-wider rounded-lg border-slate-200 hover:border-slate-800 text-slate-700 hover:text-slate-900 transition-all flex items-center justify-center uppercase"
+                                className="w-full h-[36px] text-[9px] font-bold tracking-wider rounded-lg border-border-primary hover:border-text-primary text-text-secondary hover:text-text-primary transition-all flex items-center justify-center uppercase"
                               >
                                 Edit Book
                               </Button>
@@ -631,7 +639,7 @@ const DashboardPage = () => {
                             <Link to={`/view-book/${book._id}`}>
                               <Button
                                 variant="secondary"
-                                className="h-[36px] px-4 text-[9px] font-bold tracking-wider rounded-lg border-slate-200 hover:border-slate-800 text-slate-700 hover:text-slate-900 transition-all flex items-center justify-center uppercase"
+                                className="h-[36px] px-4 text-[9px] font-bold tracking-wider rounded-lg border-border-primary hover:border-text-primary text-text-secondary hover:text-text-primary transition-all flex items-center justify-center uppercase"
                               >
                                 Preview
                               </Button>
@@ -641,7 +649,7 @@ const DashboardPage = () => {
                               type="button"
                               onClick={(e) => openDeleteDialog(book, e)}
                               title="Delete eBook"
-                              className="h-[36px] w-[36px] border border-slate-200 hover:border-red-500 text-slate-400 hover:text-red-500 rounded-lg flex items-center justify-center transition-all cursor-pointer"
+                              className="h-[36px] w-[36px] border border-border-primary hover:border-red-500 text-text-muted hover:text-red-500 rounded-lg flex items-center justify-center transition-all cursor-pointer bg-transparent"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

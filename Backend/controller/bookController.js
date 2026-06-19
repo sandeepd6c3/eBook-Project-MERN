@@ -50,8 +50,8 @@ const getBookById = async (req, res) => {
             return res.status(404).json({ message: "Book not found" });
         }
 
-        // Check ownership
-        if (book.author.toString() !== req.user._id.toString()) {
+        // Check ownership OR public access
+        if (book.author.toString() !== req.user._id.toString() && !book.isPublished) {
             return res.status(403).json({ message: "Not authorized to access this book" });
         }
 
@@ -119,10 +119,128 @@ const deleteBook = async (req, res) => {
     }
 };
 
+// @desc    Get all public (published) books
+// @route   GET /api/books/public
+// @access  Private
+const getPublicBooks = async (req, res) => {
+    const { search, category, sort } = req.query;
+
+    try {
+        let query = { isPublished: true };
+
+        if (search) {
+            query.$or = [
+                { title: { $regex: search, $options: "i" } },
+                { description: { $regex: search, $options: "i" } },
+            ];
+        }
+
+        if (category && category !== "All") {
+            query.description = { $regex: `Category:\\s*${category}`, $options: "i" };
+        }
+
+        let booksQuery = Book.find(query).populate("author", "username");
+
+        if (sort === "Most Reads") {
+            booksQuery = booksQuery.sort({ reads: -1, createdAt: -1 });
+        } else if (sort === "Highest Rated") {
+            // sorted below in memory
+        } else {
+            // Newest (Default)
+            booksQuery = booksQuery.sort({ createdAt: -1 });
+        }
+
+        let books = await booksQuery;
+
+        if (sort === "Highest Rated") {
+            books = books.sort((a, b) => {
+                const getAvgRating = (bk) => {
+                    if (!bk.reviews || bk.reviews.length === 0) return 0;
+                    const sum = bk.reviews.reduce((acc, r) => acc + r.rating, 0);
+                    return sum / bk.reviews.length;
+                };
+                return getAvgRating(b) - getAvgRating(a);
+            });
+        }
+
+        res.json(books);
+    } catch (error) {
+        console.error("Get public books error:", error);
+        res.status(500).json({ message: "Server error fetching public books", error: error.message });
+    }
+};
+
+// @desc    Increment book read count
+// @route   POST /api/books/:id/read
+// @access  Private
+const incrementReadCount = async (req, res) => {
+    try {
+        const book = await Book.findById(req.params.id);
+
+        if (!book) {
+            return res.status(404).json({ message: "Book not found" });
+        }
+
+        book.reads = (book.reads || 0) + 1;
+        await book.save();
+
+        res.json({ message: "Read count incremented", reads: book.reads });
+    } catch (error) {
+        console.error("Increment read count error:", error);
+        res.status(500).json({ message: "Server error incrementing read count", error: error.message });
+    }
+};
+
+// @desc    Add rating and review to a book
+// @route   POST /api/books/:id/reviews
+// @access  Private
+const addBookReview = async (req, res) => {
+    const { rating, comment } = req.body;
+
+    try {
+        if (!rating || rating < 1 || rating > 5) {
+            return res.status(400).json({ message: "Please provide a rating between 1 and 5 stars" });
+        }
+
+        const book = await Book.findById(req.params.id);
+
+        if (!book) {
+            return res.status(404).json({ message: "Book not found" });
+        }
+
+        const existingReviewIdx = book.reviews.findIndex(
+            (r) => r.userId.toString() === req.user._id.toString()
+        );
+
+        const newReview = {
+            userId: req.user._id,
+            username: req.user.username,
+            rating: Number(rating),
+            comment: comment || "",
+            createdAt: new Date(),
+        };
+
+        if (existingReviewIdx > -1) {
+            book.reviews[existingReviewIdx] = newReview;
+        } else {
+            book.reviews.push(newReview);
+        }
+
+        await book.save();
+        res.status(201).json({ message: "Review saved successfully", reviews: book.reviews });
+    } catch (error) {
+        console.error("Add book review error:", error);
+        res.status(500).json({ message: "Server error saving review", error: error.message });
+    }
+};
+
 module.exports = {
     createBook,
     getBooks,
     getBookById,
     updateBook,
     deleteBook,
+    getPublicBooks,
+    incrementReadCount,
+    addBookReview,
 };

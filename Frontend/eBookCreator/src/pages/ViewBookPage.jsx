@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import toast from "react-hot-toast";
 
 const API_BOOKS = "http://localhost:5000/api/books";
@@ -105,10 +106,15 @@ const ViewBookPage = () => {
   // Reader states
   const [activeChapterIndex, setActiveChapterIndex] = useState(-1); // -1 is Book Cover Page
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
-  const [theme, setTheme] = useState("light"); // "light" | "sepia" | "dark"
+  const { theme, setTheme } = useTheme();
   const [fontSize, setFontSize] = useState(16); // px font size
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [coverConfig, setCoverConfig] = useState(null);
+
+  // Reviews states
+  const [reviewsSidebarOpen, setReviewsSidebarOpen] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
 
   // Fetch book details
   useEffect(() => {
@@ -150,12 +156,57 @@ const ViewBookPage = () => {
         }
       }
       setCoverConfig(parsedConfig);
+      recordRead();
     } catch (err) {
       console.error(err);
       toast.error("Could not fetch book details.");
       navigate("/dashboard");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const recordRead = async () => {
+    const token = localStorage.getItem("token");
+    try {
+      await fetch(`${API_BOOKS}/${bookId}/read`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch (e) {
+      console.error("Error logging read session:", e);
+    }
+  };
+
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    if (!reviewComment.trim()) {
+      toast.error("Please enter your comment for the review");
+      return;
+    }
+    const token = localStorage.getItem("token");
+    try {
+      const response = await fetch(`${API_BOOKS}/${bookId}/reviews`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ rating: reviewRating, comment: reviewComment }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setBook({ ...book, reviews: data.reviews });
+        setReviewComment("");
+        setReviewRating(5);
+        toast.success("Thank you for your rating & review!");
+      } else {
+        const errData = await response.json();
+        toast.error(errData.message || "Failed to submit review.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Could not submit review.");
     }
   };
 
@@ -234,14 +285,14 @@ const ViewBookPage = () => {
 
   // CSS theme settings
   const themeClasses = {
-    light: "bg-[#FAFAF9] text-slate-800 border-slate-100",
-    sepia: "bg-[#F5EFE0] text-[#4E3629] border-[#EADFCA]",
-    dark: "bg-[#18181B] text-zinc-200 border-zinc-800",
+    light: "bg-bg-primary text-text-primary border-border-primary",
+    cream: "bg-bg-primary text-text-primary border-border-primary",
+    dark: "bg-bg-primary text-text-primary border-border-primary",
   };
 
   const innerEditorClasses = {
     light: "prose-slate",
-    sepia: "prose-amber",
+    cream: "prose-amber",
     dark: "prose-invert",
   };
 
@@ -279,6 +330,19 @@ const ViewBookPage = () => {
         {/* Theme and resizing controls */}
         <div className="flex items-center gap-4">
           
+          {/* Reviews Toggle */}
+          <button
+            onClick={() => setReviewsSidebarOpen(!reviewsSidebarOpen)}
+            className={`px-3 py-1.5 border border-slate-200 dark:border-zinc-800 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200 cursor-pointer flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-wider ${
+              reviewsSidebarOpen
+                ? "bg-indigo-50 border-indigo-200 text-indigo-700 font-black shadow-xs shadow-indigo-100"
+                : "bg-transparent opacity-75"
+            }`}
+            title="Toggle Reader Reviews"
+          >
+            💬 Reviews ({book?.reviews?.length || 0})
+          </button>
+
           {/* FontSize controls */}
           <div className="flex items-center gap-1 bg-black/5 dark:bg-white/5 p-1 rounded-lg">
             <button
@@ -301,15 +365,15 @@ const ViewBookPage = () => {
           {/* Theme pickers */}
           <div className="flex items-center gap-1.5">
             {[
-              { name: "light", label: "Light", color: "bg-[#FFFFFF] border-slate-200" },
-              { name: "sepia", label: "Sepia", color: "bg-[#F5EFE0] border-[#EADFCA] text-[#4E3629]" },
-              { name: "dark", label: "Dark", color: "bg-[#18181B] border-zinc-800" },
+              { name: "light", label: "Light", color: "bg-[#FFFFFF] border-slate-200", ringColor: "ring-[#2f80ed]" },
+              { name: "cream", label: "Cream", color: "bg-[#faf6ee] border-[#ebd9c4]", ringColor: "ring-[#a16207]" },
+              { name: "dark", label: "Dark", color: "bg-[#121212] border-zinc-800", ringColor: "ring-[#8b5cf6]" },
             ].map((t) => (
               <button
                 key={t.name}
                 onClick={() => setTheme(t.name)}
                 className={`w-6 h-6 rounded-full border transition-all cursor-pointer ${t.color} ${
-                  theme === t.name ? "ring-2 ring-indigo-500 scale-105" : "hover:scale-105"
+                  theme === t.name ? `ring-2 ring-offset-1 ${t.ringColor} scale-105` : "hover:scale-105"
                 }`}
                 title={`${t.label} Theme`}
               />
@@ -509,6 +573,114 @@ const ViewBookPage = () => {
             )}
 
           </main>
+
+          {/* Collapsible right sidebar for Reviews */}
+          <aside
+            className={`border-l shrink-0 transition-all duration-300 overflow-hidden flex flex-col justify-between ${
+              reviewsSidebarOpen ? "w-[300px] opacity-100" : "w-0 opacity-0"
+            } bg-white dark:bg-zinc-900 border-slate-100/50 p-4`}
+          >
+            <div className="flex flex-col h-full justify-between min-h-0 overflow-hidden text-slate-800 dark:text-zinc-200">
+              
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-450">
+                  Reader Reviews
+                </span>
+                <button
+                  onClick={() => setReviewsSidebarOpen(false)}
+                  className="text-slate-450 hover:text-slate-800 dark:hover:text-zinc-100 text-[10px] font-bold uppercase cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+
+              {/* Reviews List and Form */}
+              <div className="flex-grow overflow-y-auto custom-scrollbar py-4 flex flex-col gap-3 font-sans pr-1">
+                
+                {/* Form to submit review */}
+                <form
+                  onSubmit={handleReviewSubmit}
+                  className="bg-slate-50 dark:bg-zinc-950 p-3 rounded-xl border border-slate-200/40 flex flex-col gap-2 shrink-0"
+                >
+                  <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">
+                    Rate this Book
+                  </span>
+                  
+                  {/* Gold star rating list */}
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        type="button"
+                        key={star}
+                        onClick={() => setReviewRating(star)}
+                        className="text-lg cursor-pointer focus:outline-none transition-transform active:scale-110"
+                      >
+                        {star <= reviewRating ? (
+                          <span className="text-amber-500">★</span>
+                        ) : (
+                          <span className="text-slate-300 dark:text-zinc-700">★</span>
+                        )}
+                      </button>
+                    ))}
+                    <span className="text-[10px] font-bold text-slate-500 font-mono ml-1">
+                      {reviewRating} Stars
+                    </span>
+                  </div>
+
+                  <textarea
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    placeholder="Write your review comments..."
+                    rows="3"
+                    className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-lg p-2 text-[10px] outline-none text-slate-700 dark:text-zinc-300 resize-none font-medium leading-normal"
+                  />
+
+                  <button
+                    type="submit"
+                    className="w-full h-8 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer shadow-xs shadow-blue-550/10"
+                  >
+                    Submit Review
+                  </button>
+                </form>
+
+                <div className="w-full h-px bg-slate-100 dark:bg-zinc-850 my-1"></div>
+
+                {/* Display reviews list */}
+                {!book?.reviews || book.reviews.length === 0 ? (
+                  <div className="text-center py-10 text-slate-400 text-[10px] font-semibold">
+                    No reviews yet. Be the first to share your thoughts!
+                  </div>
+                ) : (
+                  book.reviews.map((r, rIdx) => (
+                    <div
+                      key={r._id || rIdx}
+                      className="bg-slate-50/50 dark:bg-zinc-950/20 p-3 rounded-xl border border-slate-100 dark:border-zinc-850 flex flex-col gap-1.5"
+                    >
+                      <div className="flex justify-between items-center text-[9px]">
+                        <span className="font-extrabold text-slate-700 dark:text-zinc-300 truncate max-w-[120px]">
+                          {r.username}
+                        </span>
+                        <span className="text-amber-500 font-bold">
+                          {"★".repeat(r.rating) + "☆".repeat(5 - r.rating)}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-500 dark:text-zinc-400 font-medium leading-relaxed break-words whitespace-pre-wrap">
+                        {r.comment}
+                      </p>
+                      <span className="text-[8px] text-slate-400 font-mono self-end">
+                        {new Date(r.createdAt).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </aside>
 
         </div>
       )}

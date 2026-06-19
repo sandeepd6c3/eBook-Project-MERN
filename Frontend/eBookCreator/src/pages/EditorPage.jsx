@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Button from "../components/ui/Button";
+import ThemeSwitcher from "../components/ui/ThemeSwitcher";
 import toast from "react-hot-toast";
 
 const API_BOOKS = "http://localhost:5000/api/books";
@@ -935,7 +936,7 @@ const EditorPage = () => {
   };
 
   return (
-    <div className="h-screen bg-[#FAF9F6] flex flex-col font-sans text-slate-800 antialiased select-text overflow-hidden">
+    <div className="h-screen bg-bg-primary text-text-primary flex flex-col font-sans antialiased select-text overflow-hidden transition-colors duration-250">
       
       {/* Editor CSS Formatting styles injection */}
       <style>{`
@@ -946,36 +947,36 @@ const EditorPage = () => {
           background: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #cbd5e1;
+          background: var(--border-primary);
           border-radius: 4px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #94a3b8;
+          background: var(--text-muted);
         }
 
         .editor-content [contenteditable]:empty:before {
           content: attr(placeholder);
-          color: #94a3b8;
+          color: var(--text-muted);
           pointer-events: none;
           display: block;
         }
         .editor-content blockquote {
-          border-left: 4px solid #10b981;
+          border-left: 4px solid var(--accent-primary);
           padding-left: 1rem;
           margin: 1rem 0;
           font-style: italic;
-          color: #4b5563;
+          color: var(--text-secondary);
         }
         .editor-content pre {
-          background-color: #f1f5f9;
+          background-color: var(--bg-tertiary);
           padding: 0.75rem 1rem;
           border-radius: 0.5rem;
           font-family: monospace;
           overflow-x: auto;
           font-size: 0.85rem;
           margin: 1rem 0;
-          color: #0f172a;
-          border: 1px solid #e2e8f0;
+          color: var(--text-primary);
+          border: 1px solid var(--border-primary);
         }
         .editor-content ul {
           list-style-type: disc;
@@ -992,7 +993,7 @@ const EditorPage = () => {
           font-weight: 600;
           margin-top: 1.5rem;
           margin-bottom: 0.5rem;
-          color: #0f172a;
+          color: var(--text-primary);
           font-family: var(--font-sans);
         }
         .editor-content h3 {
@@ -1000,7 +1001,7 @@ const EditorPage = () => {
           font-weight: 500;
           margin-top: 1.25rem;
           margin-bottom: 0.5rem;
-          color: #1e293b;
+          color: var(--text-primary);
           font-family: var(--font-sans);
         }
         .editor-content p {
@@ -1008,18 +1009,18 @@ const EditorPage = () => {
           line-height: 1.6;
         }
         .editor-content a {
-          color: #2563eb;
+          color: var(--accent-primary);
           text-decoration: underline;
         }
       `}</style>
 
       {/* Editor Header Bar */}
-      <header className="h-16 bg-white border-b border-slate-100 px-6 flex items-center justify-between shadow-xs sticky top-0 z-30">
+      <header className="h-16 bg-bg-secondary border-b border-border-primary px-6 flex items-center justify-between shadow-xs sticky top-0 z-30 transition-colors duration-250">
         <div className="flex items-center gap-3">
           {/* Left Sidebar Collapse toggle */}
           <button
             onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
-            className="p-1.5 rounded-lg hover:bg-slate-50 text-slate-400 hover:text-slate-700 transition-all cursor-pointer"
+            className="p-1.5 rounded-lg hover:bg-bg-tertiary text-text-muted hover:text-text-primary transition-all cursor-pointer bg-transparent border-none"
             title="Toggle left sidebar"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1029,26 +1030,34 @@ const EditorPage = () => {
 
           <Link
             to="/dashboard"
-            className="text-slate-400 hover:text-slate-800 transition-colors flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-widest"
+            className="text-text-muted hover:text-text-primary transition-colors flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-widest"
           >
             Library
           </Link>
-          <span className="text-slate-200">|</span>
+          <span className="text-border-primary">|</span>
+          <Link
+            to="/discover"
+            className="text-text-muted hover:text-accent-primary transition-colors flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-widest"
+          >
+            Discover
+          </Link>
+          <span className="text-border-primary">|</span>
           <Link
             to="/profile"
-            className="text-slate-400 hover:text-indigo-650 transition-colors flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-widest"
+            className="text-text-muted hover:text-accent-primary transition-colors flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-widest"
           >
             Profile
           </Link>
-          <span className="text-slate-200">|</span>
-          <span className="text-slate-800 text-xs font-semibold max-w-[200px] truncate block">
+          <span className="text-border-primary">|</span>
+          <span className="text-text-primary text-xs font-semibold max-w-[200px] truncate block">
             {book?.title || "Loading eBook..."}
           </span>
         </div>
 
         {/* Action Controls & Saving status */}
         <div className="flex items-center gap-4">
-          <span className="text-[10px] font-semibold tracking-wider text-slate-400">
+          <ThemeSwitcher />
+          <span className="text-[10px] font-semibold tracking-wider text-text-muted">
             {getSavedLabel()}
           </span>
 
@@ -1058,7 +1067,7 @@ const EditorPage = () => {
               <button
                 onClick={handleDraftWithAI}
                 disabled={aiDrafting || saving}
-                className="h-[34px] px-3.5 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white text-[10px] font-bold tracking-wider rounded-lg transition-all flex items-center gap-1.5 uppercase cursor-pointer disabled:opacity-50"
+                className="h-[34px] px-3.5 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white text-[10px] font-bold tracking-wider rounded-lg transition-all flex items-center gap-1.5 uppercase cursor-pointer disabled:opacity-50 border-none"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
@@ -1070,7 +1079,7 @@ const EditorPage = () => {
               <div className="relative">
                 <button
                   onClick={() => setExportDropdownOpen(!exportDropdownOpen)}
-                  className="h-[34px] px-3.5 border border-slate-200 hover:border-slate-800 text-slate-700 hover:text-slate-900 active:scale-[0.98] text-[10px] font-bold tracking-wider rounded-lg transition-all flex items-center gap-1 uppercase cursor-pointer"
+                  className="h-[34px] px-3.5 border border-border-primary hover:border-text-primary text-text-secondary hover:text-text-primary active:scale-[0.98] text-[10px] font-bold tracking-wider rounded-lg transition-all flex items-center gap-1 uppercase cursor-pointer bg-transparent"
                 >
                   Export
                   <svg className="w-3.5 h-3.5 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1079,16 +1088,16 @@ const EditorPage = () => {
                 </button>
 
                 {exportDropdownOpen && (
-                  <div className="absolute right-0 mt-1.5 w-44 bg-white border border-slate-100 rounded-xl shadow-xl z-50 py-1.5 animate-fadeIn">
+                  <div className="absolute right-0 mt-1.5 w-44 bg-bg-secondary border border-border-primary rounded-xl shadow-xl z-50 py-1.5 animate-fadeIn transition-colors duration-250">
                     <button
                       onClick={() => handleExport("pdf")}
-                      className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2 cursor-pointer font-medium"
+                      className="w-full text-left px-4 py-2 text-xs text-text-primary hover:bg-bg-tertiary transition-colors flex items-center gap-2 cursor-pointer font-medium bg-transparent border-none"
                     >
                       📄 Export as PDF
                     </button>
                     <button
                       onClick={() => handleExport("markdown")}
-                      className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2 cursor-pointer font-medium"
+                      className="w-full text-left px-4 py-2 text-xs text-text-primary hover:bg-bg-tertiary transition-colors flex items-center gap-2 cursor-pointer font-medium bg-transparent border-none"
                     >
                       📝 Export as Markdown
                     </button>

@@ -33,9 +33,9 @@ const InputField = ({
         placeholder={placeholder}
         required={required}
         disabled={disabled}
-        className={`w-full h-[52px] px-4 bg-white border ${
-          error ? "border-red-400 focus:border-red-500 focus:ring-red-500/35" : "border-slate-200 focus:border-slate-900 focus:ring-slate-900/35"
-        } rounded-xl text-slate-800 text-sm font-sans placeholder-slate-400 focus:ring-1 outline-none transition-all duration-300 disabled:bg-slate-50 disabled:text-slate-400`}
+        className={`w-full h-[52px] px-4 bg-bg-secondary text-text-primary border ${
+          error ? "border-red-400 focus:border-red-500 focus:ring-red-500/35" : "border-border-primary focus:border-accent-primary focus:ring-accent-ring/35"
+        } rounded-xl text-sm font-sans placeholder-text-muted focus:ring-1 outline-none transition-all duration-300 disabled:bg-bg-tertiary disabled:text-text-muted`}
         {...props}
       />
       {error && (

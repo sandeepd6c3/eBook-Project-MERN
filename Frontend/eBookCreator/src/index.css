@@ -7,17 +7,93 @@
   --color-brand-purple: #7c3aed;
   --color-brand-blue: #2f80ed;
   --color-brand-bg-light: #f9f9f9;
+
+  /* Theme semantic colors */
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-tertiary: var(--bg-tertiary);
+  
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  
+  --color-border-primary: var(--border-primary);
+  
+  --color-accent-primary: var(--accent-primary);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-ring: var(--accent-ring);
+}
+
+:root, .theme-light {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --border-primary: #e2e8f0;
+  --accent-primary: #2f80ed;
+  --accent-hover: #1d4ed8;
+  --accent-ring: #93c5fd;
+}
+
+.theme-cream {
+  --bg-primary: #faf6ee;
+  --bg-secondary: #fffefb;
+  --bg-tertiary: #f5edd6;
+  --text-primary: #2c2520;
+  --text-secondary: #5c5249;
+  --text-muted: #8c7c72;
+  --border-primary: #ebd9c4;
+  --accent-primary: #a16207;
+  --accent-hover: #78350f;
+  --accent-ring: #fcd34d;
+}
+
+.theme-dark {
+  --bg-primary: #0f0f10;
+  --bg-secondary: #161618;
+  --bg-tertiary: #222225;
+  --text-primary: #f4f4f5;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --border-primary: #27272a;
+  --accent-primary: #8b5cf6;
+  --accent-hover: #7c3aed;
+  --accent-ring: #c084fc;
 }
 
 body {
   font-family: var(--font-sans);
-  background-color: #ffffff; /* Clean white background */
-  color: #0f172a; /* Slate 900 for high readability */
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   margin: 0;
   overflow-x: hidden;
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
-  color: #0f172a;
+  color: var(--text-primary);
+  transition: color 0.25s ease;
+}
+
+/* Base custom styles for themed layout parts */
+.card-themed {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  color: var(--text-primary);
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+
+.input-themed {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  color: var(--text-primary);
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+
+.input-themed:focus {
+  border-color: var(--accent-primary);
+  outline: none;
 }

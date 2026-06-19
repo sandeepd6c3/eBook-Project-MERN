@@ -8,6 +8,7 @@ import DashboardPage from './pages/DashboardPage'
 import EditorPage from './pages/EditorPage'
 import ProfilePage from './pages/ProfilePage'
 import ViewBookPage from './pages/ViewBookPage'
+import DiscoverPage from './pages/DiscoverPage'
 
 
 const App = () => {
@@ -41,6 +42,14 @@ const App = () => {
           element={
             <ProtectedRouts>
               <ProfilePage />
+            </ProtectedRouts>
+          }
+        />
+        <Route
+          path="/discover"
+          element={
+            <ProtectedRouts>
+              <DiscoverPage />
             </ProtectedRouts>
           }
         />

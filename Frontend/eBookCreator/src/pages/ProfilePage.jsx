@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import ThemeSwitcher from "../components/ui/ThemeSwitcher";
 import toast from "react-hot-toast";
 
 // Reusable Book Cover for the Shelf
@@ -235,56 +236,77 @@ const ProfilePage = () => {
     return parsedConfig;
   };
 
-  // Get most popular book based on word count (or fallback)
+  // Get average rating of a book helper
+  const getBookAvgRating = (bk) => {
+    if (!bk?.reviews || bk.reviews.length === 0) return "0.0";
+    const sum = bk.reviews.reduce((acc, r) => acc + r.rating, 0);
+    return (sum / bk.reviews.length).toFixed(1);
+  };
+
+  // Get most popular book based on reads count
   const getPopularBook = () => {
     if (books.length === 0) {
-      return { title: "Introduction to Artificial Intelligence", words: 0 };
+      return { title: "Introduction to Artificial Intelligence", reads: 0 };
     }
-    // Sort by words
-    const sorted = [...books].sort((a, b) => {
-      const getWords = (bk) => {
-        let cnt = 0;
-        bk.chapters?.forEach(c => {
-          if (c.body) cnt += c.body.split(/\s+/).length;
-        });
-        return cnt;
-      };
-      return getWords(b) - getWords(a);
-    });
+    const sorted = [...books].sort((a, b) => (b.reads || 0) - (a.reads || 0));
     return sorted[0];
   };
 
   const popularBook = getPopularBook();
 
+  // Total Reads across all books
+  const totalReads = books.reduce((acc, b) => acc + (b.reads || 0), 0);
+
+  // Average rating across all reviews of all books
+  const getAverageAuthorRating = () => {
+    let reviewCount = 0;
+    let ratingSum = 0;
+    books.forEach((b) => {
+      if (b.reviews) {
+        b.reviews.forEach((r) => {
+          ratingSum += r.rating;
+          reviewCount += 1;
+        });
+      }
+    });
+    return reviewCount > 0 ? (ratingSum / reviewCount).toFixed(1) : "0.0";
+  };
+
+  const avgAuthorRating = getAverageAuthorRating();
+  const totalReviewsCount = books.reduce((acc, b) => acc + (b.reviews?.length || 0), 0);
+
   const displayInitials = user?.username ? user.username.substring(0, 2).toUpperCase() : "W";
 
   return (
-    <div className="min-h-screen bg-[#FAF9F6] text-slate-800 font-sans flex flex-col justify-start">
+    <div className="min-h-screen bg-bg-primary text-text-primary font-sans flex flex-col justify-start transition-colors duration-250">
       
       {/* Sticky Header */}
-      <header className="h-16 bg-white border-b border-slate-100 px-6 flex items-center justify-between shadow-xs sticky top-0 z-30">
+      <header className="h-16 bg-bg-secondary border-b border-border-primary px-6 flex items-center justify-between shadow-xs sticky top-0 z-30 transition-colors duration-250">
         <div className="flex items-center gap-3">
           <Link
             to="/dashboard"
-            className="text-slate-400 hover:text-slate-800 transition-colors flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-widest"
+            className="text-text-muted hover:text-text-primary transition-colors flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-widest"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
             </svg>
             Library
           </Link>
-          <span className="text-slate-200">|</span>
-          <span className="text-slate-800 text-xs font-semibold">
+          <span className="text-border-primary">|</span>
+          <span className="text-text-primary text-xs font-semibold">
             Writer Hub Profile
           </span>
         </div>
 
-        <button
-          onClick={handleLogoutClick}
-          className="h-[34px] px-4 border border-rose-200 hover:border-rose-500 hover:bg-rose-50 text-rose-600 hover:text-rose-700 active:scale-[0.98] text-[10px] font-bold tracking-wider rounded-lg transition-all uppercase cursor-pointer"
-        >
-          Sign Out
-        </button>
+        <div className="flex items-center gap-4">
+          <ThemeSwitcher />
+          <button
+            onClick={handleLogoutClick}
+            className="h-[34px] px-4 bg-transparent border border-rose-200 hover:border-rose-500 hover:bg-rose-500/10 text-rose-600 hover:text-rose-700 active:scale-[0.98] text-[10px] font-bold tracking-wider rounded-lg transition-all uppercase cursor-pointer"
+          >
+            Sign Out
+          </button>
+        </div>
       </header>
 
       {/* Main Container Canvas */}
@@ -538,10 +560,10 @@ const ProfilePage = () => {
                     <h4 className="font-display font-medium text-xs text-slate-900 leading-snug line-clamp-2">
                       {popularBook?.title || "eBook Title"}
                     </h4>
-                    <div className="flex items-center gap-2 mt-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-wide">
-                      <span className="flex items-center gap-0.5">👁 125 Reads</span>
+                    <div className="flex items-center gap-2 mt-1.5 text-[9px] font-bold text-slate-455 uppercase tracking-wide">
+                      <span className="flex items-center gap-0.5">👁 {popularBook?.reads || 0} Reads</span>
                       <span className="text-slate-200">|</span>
-                      <span className="text-amber-500">⭐ 4.8</span>
+                      <span className="text-amber-500">★ {getBookAvgRating(popularBook)}</span>
                     </div>
                   </div>
                 </div>
@@ -560,18 +582,22 @@ const ProfilePage = () => {
                 
                 <div className="flex flex-col gap-2.5 text-xs font-semibold text-slate-600">
                   <div className="flex justify-between items-center py-0.5">
-                    <span className="opacity-75">Total Readers</span>
-                    <span className="text-slate-900 font-mono font-extrabold">250</span>
+                    <span className="opacity-75">Total Reads</span>
+                    <span className="text-slate-900 font-mono font-extrabold">{totalReads}</span>
                   </div>
                   <div className="w-full h-px bg-slate-50"></div>
                   <div className="flex justify-between items-center py-0.5">
-                    <span className="opacity-75">Pages Read</span>
-                    <span className="text-slate-900 font-mono font-extrabold">4,200</span>
+                    <span className="opacity-75">Est. Pages Written</span>
+                    <span className="text-slate-900 font-mono font-extrabold">
+                      {totalWordsWritten > 0 ? Math.round(totalWordsWritten / 250) : 0}
+                    </span>
                   </div>
                   <div className="w-full h-px bg-slate-50"></div>
                   <div className="flex justify-between items-center py-0.5">
-                    <span className="opacity-75">Avg Reading Time</span>
-                    <span className="text-indigo-600 font-mono font-extrabold">8 min</span>
+                    <span className="opacity-75">Avg Rating</span>
+                    <span className="text-indigo-650 font-mono font-extrabold">
+                      ★ {avgAuthorRating} ({totalReviewsCount} Reviews)
+                    </span>
                   </div>
                 </div>
               </div>
@@ -705,6 +731,10 @@ const ProfilePage = () => {
                   <span className="text-[9px] font-semibold text-slate-700 truncate block text-center group-hover:text-slate-900 group-hover:underline">
                     {book.title}
                   </span>
+                  <div className="flex items-center justify-center gap-1.5 text-[8px] font-mono text-slate-400">
+                    <span>👁 {book.reads || 0}</span>
+                    <span>★ {book.reviews?.length > 0 ? (book.reviews.reduce((acc, r) => acc + r.rating, 0) / book.reviews.length).toFixed(1) : "0.0"}</span>
+                  </div>
                 </Link>
               ))}
             </div>
