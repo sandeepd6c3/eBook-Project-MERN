@@ -1,0 +1,50 @@
+import React from "react";
+
+const InputField = ({
+  label,
+  id,
+  name,
+  type = "text",
+  value,
+  onChange,
+  placeholder,
+  error,
+  required = false,
+  disabled = false,
+  className = "",
+  ...props
+}) => {
+  return (
+    <div className={`w-full flex flex-col items-start ${className}`}>
+      {label && (
+        <label
+          htmlFor={id || name}
+          className="tracking-wider text-[10px] font-bold text-slate-400 uppercase mb-2 block"
+        >
+          {label} {required && <span className="text-red-500">*</span>}
+        </label>
+      )}
+      <input
+        id={id || name}
+        name={name}
+        type={type}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        required={required}
+        disabled={disabled}
+        className={`w-full h-[52px] px-4 bg-white border ${
+          error ? "border-red-400 focus:border-red-500 focus:ring-red-500/35" : "border-slate-200 focus:border-slate-900 focus:ring-slate-900/35"
+        } rounded-xl text-slate-800 text-sm font-sans placeholder-slate-400 focus:ring-1 outline-none transition-all duration-300 disabled:bg-slate-50 disabled:text-slate-400`}
+        {...props}
+      />
+      {error && (
+        <p className="text-[10px] text-red-500 font-medium mt-1.5 pl-1">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+};
+
+export default InputField;

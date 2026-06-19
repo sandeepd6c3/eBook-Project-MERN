@@ -24,10 +24,12 @@ app.use("/Backend/uploads", express.static(path.join(__dirname, "uploads")));
 // Route imports
 const authRoutes = require("./routes/authRoutes");
 const bookRoutes = require("./routes/bookRoutes");
+const aiRoutes = require("./routes/aiRoutes");
 
 // Mount routes
 app.use("/api/auth", authRoutes);
 app.use("/api/books", bookRoutes);
+app.use("/api/ai", aiRoutes);
 
 // Connect to the database, then start the server
 connectDB()

@@ -94,6 +94,12 @@ const getUserProfile = async (req, res) => {
                 username: user.username,
                 email: user.email,
                 role: user.role,
+                bio: user.bio,
+                location: user.location,
+                streak: user.streak,
+                avatar: user.avatar,
+                preferredTheme: user.preferredTheme,
+                createdAt: user.createdAt,
             });
         } else {
             res.status(404).json({ message: "User not found" });
@@ -104,8 +110,49 @@ const getUserProfile = async (req, res) => {
     }
 };
 
+// @desc    Update user profile
+// @route   PUT /api/auth/profile
+// @access  Private
+const updateUserProfile = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+
+        if (user) {
+            user.username = req.body.username || user.username;
+            user.bio = req.body.bio !== undefined ? req.body.bio : user.bio;
+            user.location = req.body.location !== undefined ? req.body.location : user.location;
+            user.avatar = req.body.avatar !== undefined ? req.body.avatar : user.avatar;
+            user.preferredTheme = req.body.preferredTheme !== undefined ? req.body.preferredTheme : user.preferredTheme;
+            if (req.body.streak !== undefined) {
+                user.streak = Number(req.body.streak);
+            }
+
+            const updatedUser = await user.save();
+
+            res.json({
+                _id: updatedUser._id,
+                username: updatedUser.username,
+                email: updatedUser.email,
+                role: updatedUser.role,
+                bio: updatedUser.bio,
+                location: updatedUser.location,
+                streak: updatedUser.streak,
+                avatar: updatedUser.avatar,
+                preferredTheme: updatedUser.preferredTheme,
+                createdAt: updatedUser.createdAt,
+            });
+        } else {
+            res.status(404).json({ message: "User not found" });
+        }
+    } catch (error) {
+        console.error("Update user profile error:", error);
+        res.status(500).json({ message: "Server error updating profile", error: error.message });
+    }
+};
+
 module.exports = {
     registerUser,
     loginUser,
     getUserProfile,
+    updateUserProfile,
 };
