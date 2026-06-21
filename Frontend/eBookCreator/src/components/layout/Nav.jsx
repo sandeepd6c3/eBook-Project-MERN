@@ -23,7 +23,7 @@ const Nav = () => {
         <nav className="hidden md:flex items-center gap-8 text-xs font-bold uppercase tracking-wider text-slate-500">
           <a href="#features" className="hover:text-brand-purple transition-colors duration-200">Features</a>
           <a href="#workflow" className="hover:text-brand-purple transition-colors duration-200">Workflow</a>
-          <a href="#tech" className="hover:text-brand-purple transition-colors duration-200">Technology</a>
+          <a href="#faq" className="hover:text-brand-purple transition-colors duration-200">FAQ</a>
         </nav>
 
         {/* Action Buttons */}
