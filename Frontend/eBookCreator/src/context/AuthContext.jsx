@@ -118,6 +118,41 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Google OAuth Login
+  const googleLogin = async (tokenData) => {
+    try {
+      const response = await fetch(`${API_BASE}/google-login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(tokenData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Google Login failed");
+      }
+
+      // Save token & user state
+      localStorage.setItem("token", data.token);
+      setUser({
+        _id: data._id,
+        username: data.username,
+        email: data.email,
+        role: data.role,
+        avatar: data.avatar || "",
+        preferredTheme: data.preferredTheme || "light",
+      });
+      setIsAuthenticated(true);
+      return data;
+    } catch (error) {
+      console.error("Google login request failed:", error);
+      throw error;
+    }
+  };
+
   // Logout action
   const logout = () => {
     localStorage.removeItem("token");
@@ -134,6 +169,7 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated,
         register,
         login,
+        googleLogin,
         logout,
       }}
     >

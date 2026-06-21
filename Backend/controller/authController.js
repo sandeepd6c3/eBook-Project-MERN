@@ -150,9 +150,102 @@ const updateUserProfile = async (req, res) => {
     }
 };
 
+// @desc    Google OAuth login/signup
+// @route   POST /api/auth/google-login
+// @access  Public
+const googleLogin = async (req, res) => {
+    const { token, isMock, mockPayload } = req.body;
+
+    try {
+        let email, username, picture;
+
+        if (isMock || !token || token === "mock_token") {
+            // For testing and local validation bypass
+            const payload = mockPayload || {
+                email: "demo.google@example.com",
+                name: "Google Demo User",
+                picture: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150"
+            };
+            email = payload.email;
+            username = payload.name;
+            picture = payload.picture;
+            console.log("Using Mock Google Authentication for testing:", email);
+        } else {
+            // Verify token via Google tokeninfo endpoint
+            console.log("Verifying Google ID Token...");
+            const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${token}`);
+            if (!response.ok) {
+                return res.status(400).json({ message: "Invalid Google credential token" });
+            }
+            const payload = await response.json();
+
+            email = payload.email;
+            username = payload.name || payload.given_name || email.split("@")[0];
+            picture = payload.picture;
+            console.log("Verified Google user:", email);
+        }
+
+        if (!email) {
+            return res.status(400).json({ message: "Google profile email not found" });
+        }
+
+        // Check if user already exists
+        let user = await User.findOne({ email });
+
+        if (user) {
+            // Log in existing user
+            // Update avatar if not set
+            if (!user.avatar && picture) {
+                user.avatar = picture;
+                await user.save();
+            }
+        } else {
+            // Register new user
+            // Clean username to be unique
+            let baseUsername = username.toLowerCase().replace(/[^a-z0-9]/g, "_");
+            if (!baseUsername) baseUsername = "user";
+            
+            // Check if username taken, append random if needed
+            let usernameExists = await User.findOne({ username: baseUsername });
+            let finalUsername = baseUsername;
+            let counter = 1;
+            while (usernameExists) {
+                finalUsername = `${baseUsername}_${counter}`;
+                usernameExists = await User.findOne({ username: finalUsername });
+                counter++;
+            }
+
+            // Create a secure default password since it's required in mongoose model
+            const securePassword = "Google_OAuth_Session_Secure_" + Math.random().toString(36).slice(-8);
+
+            user = await User.create({
+                username: finalUsername,
+                email,
+                password: securePassword,
+                avatar: picture || "",
+                role: "creator",
+            });
+        }
+
+        res.json({
+            _id: user._id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+            avatar: user.avatar,
+            preferredTheme: user.preferredTheme,
+            token: generateToken(user._id),
+        });
+    } catch (error) {
+        console.error("Google login error:", error);
+        res.status(500).json({ message: "Server error during Google Login", error: error.message });
+    }
+};
+
 module.exports = {
     registerUser,
     loginUser,
     getUserProfile,
     updateUserProfile,
+    googleLogin,
 };

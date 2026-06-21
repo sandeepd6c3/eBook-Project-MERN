@@ -5,12 +5,14 @@ const {
     loginUser,
     getUserProfile,
     updateUserProfile,
+    googleLogin,
 } = require("../controller/authController");
 const { protect } = require("../middlewares/authMiddlewares");
 const upload = require("../middlewares/uploadMiddlewares");
 
 router.post("/register", registerUser);
 router.post("/login", loginUser);
+router.post("/google-login", googleLogin);
 router.get("/profile", protect, getUserProfile);
 router.put("/profile", protect, updateUserProfile);
 

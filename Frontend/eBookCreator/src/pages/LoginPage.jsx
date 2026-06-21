@@ -3,10 +3,11 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import InputField from "../components/ui/InputField";
 import Button from "../components/ui/Button";
+import Modal from "../components/ui/Modal";
 import toast from "react-hot-toast";
 
 const LoginPage = () => {
-  const { login } = useAuth();
+  const { login, googleLogin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -39,6 +40,65 @@ const LoginPage = () => {
     }
     return () => clearInterval(interval);
   }, [timer]);
+
+  // Google OAuth states
+  const [showGoogleMockModal, setShowGoogleMockModal] = useState(false);
+  const [customMockGoogle, setCustomMockGoogle] = useState({
+    name: "",
+    email: "",
+  });
+
+  // Dynamically load Google Identity Services script
+  useEffect(() => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (clientId && clientId !== "YOUR_GOOGLE_CLIENT_ID") {
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        if (window.google) {
+          window.google.accounts.id.initialize({
+            client_id: clientId,
+            callback: handleGoogleCredentialResponse,
+          });
+        }
+      };
+      document.body.appendChild(script);
+      return () => {
+        document.body.removeChild(script);
+      };
+    }
+  }, []);
+
+  const handleGoogleCredentialResponse = async (response) => {
+    setLoading(true);
+    const toastId = toast.loading("Connecting to Google...");
+    try {
+      await googleLogin({ token: response.credential });
+      toast.success("Signed in with Google successfully!", { id: toastId });
+      navigate(from, { replace: true });
+    } catch (err) {
+      toast.error(err.message || "Google Login failed", { id: toastId });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMockGoogleLogin = async (mockData) => {
+    setLoading(true);
+    setShowGoogleMockModal(false);
+    const toastId = toast.loading("Simulating Google Login...");
+    try {
+      await googleLogin({ isMock: true, mockPayload: mockData });
+      toast.success("Successfully authenticated via Google Demo!", { id: toastId });
+      navigate(from, { replace: true });
+    } catch (err) {
+      toast.error(err.message || "Mock Google Login failed", { id: toastId });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Handle input change
   const handleChange = (e) => {
@@ -167,7 +227,12 @@ const LoginPage = () => {
   };
 
   const handleGoogleSignIn = () => {
-    toast.success("Google Authentication is coming soon!");
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (clientId && clientId !== "YOUR_GOOGLE_CLIENT_ID" && window.google) {
+      window.google.accounts.id.prompt();
+    } else {
+      setShowGoogleMockModal(true);
+    }
   };
 
   return (
@@ -367,6 +432,110 @@ const LoginPage = () => {
 
         </div>
       </div>
+
+      {/* Google Mock Simulation Modal */}
+      <Modal
+        isOpen={showGoogleMockModal}
+        onClose={() => setShowGoogleMockModal(false)}
+        title="Google Authentication Simulator"
+      >
+        <div className="flex flex-col gap-5 text-left">
+          <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
+            Since no Google Client ID is configured in <code className="text-slate-600 bg-slate-100 px-1 rounded font-mono">Frontend/eBookCreator/.env</code>, you can test the database onboarding, credentials registration, and OAuth profile syncing via this interactive emulator:
+          </p>
+
+          <div className="flex flex-col gap-2.5">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">
+              Select Demo Google Account:
+            </span>
+            {[
+              {
+                name: "Sandeep Sharma",
+                email: "sandeep@gmail.com",
+                picture: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&h=80",
+              },
+              {
+                name: "Jane Doe",
+                email: "jane.doe@gmail.com",
+                picture: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&h=80",
+              },
+              {
+                name: "Alex Mercer",
+                email: "alex.mercer@gmail.com",
+                picture: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=80&h=80",
+              }
+            ].map((account, idx) => (
+              <button
+                key={idx}
+                onClick={() => handleMockGoogleLogin(account)}
+                type="button"
+                className="w-full flex items-center justify-between p-3.5 border border-slate-100 hover:border-slate-800 hover:bg-slate-50 rounded-xl transition-all duration-200 text-left group cursor-pointer bg-white"
+              >
+                <div className="flex items-center gap-3">
+                  <img
+                    src={account.picture}
+                    alt={account.name}
+                    className="w-9 h-9 rounded-full border border-slate-100 shadow-sm"
+                  />
+                  <div>
+                    <h4 className="text-[11px] font-bold text-slate-800 group-hover:text-slate-900">
+                      {account.name}
+                    </h4>
+                    <span className="text-[10px] text-slate-400 group-hover:text-slate-500 font-medium">
+                      {account.email}
+                    </span>
+                  </div>
+                </div>
+                <span className="text-[9px] font-extrabold text-emerald-600 uppercase tracking-wider bg-emerald-50 px-2 py-0.5 rounded-full">
+                  Sign In
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-3 my-1">
+            <div className="flex-1 h-[1px] bg-slate-100"></div>
+            <span className="text-[8px] font-extrabold uppercase tracking-widest text-slate-300">
+              OR CUSTOM ACCOUNT
+            </span>
+            <div className="flex-1 h-[1px] bg-slate-100"></div>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <InputField
+              label="Custom Google Name"
+              placeholder="e.g. John Watson"
+              value={customMockGoogle.name}
+              onChange={(e) => setCustomMockGoogle(prev => ({ ...prev, name: e.target.value }))}
+            />
+            <InputField
+              label="Custom Google Email"
+              type="email"
+              placeholder="e.g. john.watson@gmail.com"
+              value={customMockGoogle.email}
+              onChange={(e) => setCustomMockGoogle(prev => ({ ...prev, email: e.target.value }))}
+            />
+            <Button
+              onClick={() => {
+                if (!customMockGoogle.name.trim() || !customMockGoogle.email.trim()) {
+                  toast.error("Please fill custom Name and Email fields.");
+                  return;
+                }
+                handleMockGoogleLogin({
+                  name: customMockGoogle.name,
+                  email: customMockGoogle.email,
+                  picture: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150",
+                });
+              }}
+              type="button"
+              variant="primary"
+              className="w-full h-[45px] bg-slate-800 hover:bg-slate-700 text-white text-[10px] font-bold tracking-wider rounded-xl transition-all duration-300 border-none cursor-pointer"
+            >
+              Sign In with Custom Mock Account
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
