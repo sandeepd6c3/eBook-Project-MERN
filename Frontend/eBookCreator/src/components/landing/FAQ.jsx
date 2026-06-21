@@ -31,18 +31,18 @@ const FAQ = () => {
   };
 
   return (
-    <section id="faq" className="py-24 bg-[#f9fafb] border-t border-b border-slate-100 scroll-mt-20">
+    <section id="faq" className="py-24 bg-bg-secondary border-t border-b border-border-primary scroll-mt-20 transition-colors duration-250">
       <div className="max-w-4xl mx-auto px-6">
         
         {/* Section Header */}
         <div className="text-center mb-16">
-          <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full">
+          <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full dark:bg-emerald-950/30 dark:text-emerald-450">
             FAQS & HELP
           </span>
-          <h2 className="font-display font-light text-3xl sm:text-4xl text-slate-900 tracking-tight mt-4 mb-3">
+          <h2 className="font-display font-light text-3xl sm:text-4xl text-text-primary tracking-tight mt-4 mb-3">
             Frequently Asked Questions
           </h2>
-          <p className="text-slate-500 text-xs sm:text-sm max-w-lg mx-auto leading-relaxed">
+          <p className="text-text-secondary text-xs sm:text-sm max-w-lg mx-auto leading-relaxed">
             Everything you need to know about the AI eBook Creator platform, publishing rights, and exporting.
           </p>
         </div>
@@ -54,10 +54,10 @@ const FAQ = () => {
             return (
               <div 
                 key={index}
-                className={`bg-white border rounded-[20px] transition-all duration-300 ${
+                className={`bg-bg-primary border rounded-[20px] transition-all duration-300 ${
                   isOpen 
                     ? "border-emerald-700/30 shadow-lg shadow-emerald-700/[0.02]" 
-                    : "border-slate-100 hover:border-slate-300 shadow-sm"
+                    : "border-border-primary hover:border-text-muted shadow-sm"
                 }`}
               >
                 {/* Accordion Trigger */}
@@ -66,13 +66,13 @@ const FAQ = () => {
                   onClick={() => toggleFAQ(index)}
                   className="w-full flex items-center justify-between px-6 py-5 text-left cursor-pointer focus:outline-none"
                 >
-                  <span className="text-xs sm:text-sm font-bold text-slate-800 transition-colors duration-200">
+                  <span className="text-xs sm:text-sm font-bold text-text-primary transition-colors duration-200">
                     {item.question}
                   </span>
                   
                   {/* Rotating Chevron/Plus Icon */}
                   <div className={`h-7 w-7 rounded-full flex items-center justify-center transition-all duration-300 ${
-                    isOpen ? "bg-emerald-50 text-emerald-700" : "bg-slate-50 text-slate-400"
+                    isOpen ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-450" : "bg-bg-secondary text-text-muted"
                   }`}>
                     <svg 
                       className={`w-4 h-4 transform transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`} 
@@ -88,10 +88,10 @@ const FAQ = () => {
                 {/* Accordion Content with smooth height logic */}
                 <div 
                   className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                    isOpen ? "max-h-[300px] border-t border-slate-50" : "max-h-0"
+                    isOpen ? "max-h-[300px] border-t border-border-primary" : "max-h-0"
                   }`}
                 >
-                  <p className="px-6 py-5 text-xs sm:text-sm text-slate-500 leading-relaxed">
+                  <p className="px-6 py-5 text-xs sm:text-sm text-text-secondary leading-relaxed">
                     {item.answer}
                   </p>
                 </div>

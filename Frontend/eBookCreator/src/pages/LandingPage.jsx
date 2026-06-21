@@ -10,7 +10,7 @@ import Footer from "../components/landing/Footer";
 
 const LandingPage = () => {
   return (
-    <div className="min-h-screen bg-white text-slate-900 flex flex-col selection:bg-brand-blue selection:text-white">
+    <div className="min-h-screen bg-bg-primary text-text-primary flex flex-col transition-colors duration-250 selection:bg-brand-blue selection:text-white">
       <Nav />
       <main className="flex-grow">
         <Hero />

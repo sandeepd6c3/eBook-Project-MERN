@@ -1143,22 +1143,22 @@ const EditorPage = () => {
 
       {/* Editor Body Area */}
       {loading ? (
-        <div className="flex-1 flex items-center justify-center bg-[#FAF9F6]">
-          <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+        <div className="flex-1 flex items-center justify-center bg-bg-primary">
+          <div className="w-8 h-8 border-4 border-border-primary border-t-accent-primary rounded-full animate-spin"></div>
         </div>
       ) : (
         <div className="flex-1 flex relative overflow-hidden h-[calc(100vh-4rem)]">
           
           {/* LEFT SIDEBAR: Cover art + Progress TOC */}
           <aside
-            className={`bg-white border-r border-slate-100 flex flex-col justify-between shrink-0 transition-all duration-300 overflow-hidden ${
+            className={`bg-bg-secondary border-r border-border-primary flex flex-col justify-between shrink-0 transition-all duration-300 overflow-hidden text-text-primary ${
               leftSidebarOpen ? "w-[260px] opacity-100" : "w-0 opacity-0"
             }`}
           >
             <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-5">
               
               {/* Premium Book Cover Card Preview */}
-              <div className="bg-slate-50/50 rounded-2xl p-3.5 border border-slate-100 flex flex-col items-center">
+              <div className="bg-bg-tertiary/50 rounded-2xl p-3.5 border border-border-primary flex flex-col items-center">
                 <BookCover
                   config={coverConfig}
                   title={book?.title || ""}
@@ -1167,7 +1167,7 @@ const EditorPage = () => {
                 />
                 <button
                   onClick={() => setIsCoverModalOpen(true)}
-                  className="mt-3 text-[9px] font-bold text-slate-500 hover:text-slate-800 tracking-wider uppercase border border-slate-200 hover:border-slate-400 px-3 py-1.5 rounded-lg bg-white shadow-2xs hover:shadow-xs transition-all cursor-pointer"
+                  className="mt-3 text-[9px] font-bold text-text-secondary hover:text-text-primary tracking-wider uppercase border border-border-primary hover:border-text-primary px-3 py-1.5 rounded-lg bg-bg-primary shadow-2xs hover:shadow-xs transition-all cursor-pointer"
                 >
                   ✨ AI Cover Builder
                 </button>
@@ -1176,14 +1176,14 @@ const EditorPage = () => {
               {/* Table of Contents List */}
               <div className="flex flex-col gap-1">
                 <div className="flex items-center justify-between pl-2 mb-2">
-                  <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-400">
+                  <span className="text-[9px] font-extrabold uppercase tracking-widest text-text-muted">
                     Table of Contents
                   </span>
                   
                   {book.chapters && book.chapters.length > 0 && (
                     <button
                       onClick={openOutlineModal}
-                      className="text-[8px] font-bold text-indigo-600 hover:text-indigo-800 uppercase tracking-wider cursor-pointer"
+                      className="text-[8px] font-bold text-accent-primary hover:text-accent-hover uppercase tracking-wider cursor-pointer"
                       title="Reset and regenerate outline with AI parameters"
                     >
                       Re-Outline
@@ -1196,7 +1196,7 @@ const EditorPage = () => {
                     {book.chapters.map((ch, idx) => {
                       const isCompleted = ch.body && ch.body.replace(/<[^>]*>/g, "").trim().length > 10;
                       const isActive = idx === activeChapterIndex;
-
+ 
                       return (
                         <button
                           key={ch._id || idx}
@@ -1204,7 +1204,7 @@ const EditorPage = () => {
                           className={`w-full text-left px-3 py-2.5 rounded-xl transition-all duration-200 border text-xs cursor-pointer flex items-center gap-2.5 ${
                             isActive
                               ? "bg-slate-900 border-slate-950 text-white shadow-md shadow-slate-900/10 font-medium"
-                              : "bg-transparent border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                              : "bg-transparent border-transparent text-text-secondary hover:bg-bg-tertiary hover:text-text-primary"
                           }`}
                         >
                           {/* Progress state bullet */}
@@ -1213,20 +1213,20 @@ const EditorPage = () => {
                               <span className={`text-[11px] ${isActive ? "text-emerald-400" : "text-emerald-600"}`}>✓</span>
                             ) : isActive ? (
                               <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-ring opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-accent-primary"></span>
                               </span>
                             ) : (
-                              <div className="w-1.5 h-1.5 rounded-full border border-slate-300"></div>
+                              <div className="w-1.5 h-1.5 rounded-full border border-border-primary"></div>
                             )}
                           </div>
 
                           <div className="truncate flex-1">
                             <span className="block truncate font-semibold text-[11px]">
-                              {ch.title}
+                              {ch.title || `Chapter ${idx + 1}`}
                             </span>
                             {!isActive && ch.body && (
-                              <span className="text-[9px] text-slate-400 block truncate">
+                              <span className="text-[9px] text-text-muted block truncate">
                                 {ch.body.replace(/<[^>]*>/g, "").substring(0, 30)}...
                               </span>
                             )}
@@ -1236,19 +1236,19 @@ const EditorPage = () => {
                     })}
                   </div>
                 ) : (
-                  <div className="text-center py-6 bg-slate-50/50 border border-dashed border-slate-100 rounded-xl text-slate-400 text-[10px] font-semibold">
+                  <div className="text-center py-6 bg-bg-tertiary/50 border border-dashed border-border-primary rounded-xl text-text-muted text-[10px] font-semibold">
                     No chapters defined.
                   </div>
                 )}
               </div>
             </div>
-
+ 
             {/* Left Sidebar Footer */}
             {book.chapters && book.chapters.length > 0 && (
-              <div className="p-4 border-t border-slate-100 bg-white">
+              <div className="p-4 border-t border-border-primary bg-bg-secondary">
                 <button
                   onClick={handleAddChapter}
-                  className="w-full h-[36px] border border-dashed border-slate-200 hover:border-slate-850 hover:bg-slate-50/50 text-slate-500 hover:text-slate-800 transition-all rounded-xl text-[9px] font-bold tracking-wider uppercase flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="w-full h-[36px] border border-dashed border-border-primary hover:border-text-primary hover:bg-bg-tertiary text-text-secondary hover:text-text-primary transition-all rounded-xl text-[9px] font-bold tracking-wider uppercase flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
@@ -1260,25 +1260,25 @@ const EditorPage = () => {
           </aside>
 
           {/* CENTER PANEL: Writing Workspace & Sticky Toolbar */}
-          <main className="flex-1 bg-[#FAF9F6] overflow-y-auto custom-scrollbar flex flex-col justify-between border-r border-slate-50">
+          <main className="flex-1 bg-bg-primary overflow-y-auto custom-scrollbar flex flex-col justify-between border-r border-border-primary">
             
             {book.chapters && book.chapters.length === 0 ? (
               /* Outline Generator Empty State */
-              <div className="m-auto w-full max-w-[450px] bg-white border border-slate-100 rounded-[28px] p-8 sm:p-12 text-center shadow-xl shadow-slate-100/40 flex flex-col items-center animate-fadeIn">
-                <div className="h-12 w-12 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-5">
+              <div className="m-auto w-full max-w-[450px] bg-bg-secondary border border-border-primary rounded-[28px] p-8 sm:p-12 text-center shadow-xl shadow-slate-900/[0.02] flex flex-col items-center animate-fadeIn">
+                <div className="h-12 w-12 bg-emerald-50/10 border border-emerald-100/20 text-emerald-600 rounded-full flex items-center justify-center mb-5">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                   </svg>
                 </div>
-                <h3 className="font-display font-light text-2xl text-slate-900 mb-2">
+                <h3 className="font-display font-light text-2xl text-text-primary mb-2">
                   Outline with AI
                 </h3>
-                <p className="text-slate-400 text-xs font-medium mb-8 leading-relaxed max-w-[320px]">
+                <p className="text-text-muted text-xs font-medium mb-8 leading-relaxed max-w-[320px]">
                   Provide a topic, audience scope, and tone parameters to outline a complete Table of Contents outline.
                 </p>
                 <Button
                   onClick={openOutlineModal}
-                  className="h-[42px] bg-slate-900 hover:bg-slate-800 border-none text-[10px] font-bold tracking-wider rounded-xl transition-all px-8 uppercase flex items-center gap-2 cursor-pointer text-white"
+                  className="h-[42px] bg-accent-primary hover:bg-accent-hover border-none text-[10px] font-bold tracking-wider rounded-xl transition-all px-8 uppercase flex items-center gap-2 cursor-pointer text-white"
                 >
                   <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -1287,7 +1287,7 @@ const EditorPage = () => {
                 </Button>
               </div>
             ) : activeChapterIndex === -1 ? (
-              <div className="m-auto text-slate-400 text-xs font-semibold">
+              <div className="m-auto text-text-muted text-xs font-semibold">
                 Select a chapter from the Table of Contents to begin editing.
               </div>
             ) : (
@@ -1295,52 +1295,52 @@ const EditorPage = () => {
               <div className="flex-1 flex flex-col justify-between">
                 
                 {/* HTML Custom Formatting Toolbar */}
-                <div className="h-11 bg-white border-b border-slate-100 px-6 flex items-center justify-between sticky top-0 z-10 shadow-2xs">
+                <div className="h-11 bg-bg-secondary border-b border-border-primary px-6 flex items-center justify-between sticky top-0 z-10 shadow-xs">
                   <div className="flex items-center gap-1.5 overflow-x-auto py-1">
                     <button
                       onMouseDown={(e) => { e.preventDefault(); handleFormat("formatBlock", "<h2>"); }}
-                      className="p-1 px-2 text-[10px] font-bold text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
+                      className="p-1 px-2 text-[10px] font-bold text-text-secondary hover:bg-bg-tertiary rounded-md transition-colors"
                       title="Heading 2"
                     >
                       H2
                     </button>
                     <button
                       onMouseDown={(e) => { e.preventDefault(); handleFormat("formatBlock", "<h3>"); }}
-                      className="p-1 px-2 text-[10px] font-bold text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
+                      className="p-1 px-2 text-[10px] font-bold text-text-secondary hover:bg-bg-tertiary rounded-md transition-colors"
                       title="Heading 3"
                     >
                       H3
                     </button>
-                    <div className="w-px h-3.5 bg-slate-200 mx-0.5"></div>
+                    <div className="w-px h-3.5 bg-border-primary mx-0.5"></div>
                     <button
                       onMouseDown={(e) => { e.preventDefault(); handleFormat("bold"); }}
-                      className="p-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-md font-bold transition-colors"
+                      className="p-1.5 text-xs text-text-secondary hover:bg-bg-tertiary rounded-md font-bold transition-colors"
                       title="Bold"
                     >
                       B
                     </button>
                     <button
                       onMouseDown={(e) => { e.preventDefault(); handleFormat("italic"); }}
-                      className="p-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-md italic transition-colors"
+                      className="p-1.5 text-xs text-text-secondary hover:bg-bg-tertiary rounded-md italic transition-colors"
                       title="Italic"
                     >
                       I
                     </button>
                     <button
                       onMouseDown={(e) => { e.preventDefault(); handleFormat("formatBlock", "<blockquote>"); }}
-                      className="p-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-md transition-colors font-mono"
+                      className="p-1.5 text-xs text-text-secondary hover:bg-bg-tertiary rounded-md transition-colors font-mono"
                       title="Blockquote"
                     >
                       “
                     </button>
                     <button
                       onMouseDown={(e) => { e.preventDefault(); handleFormat("formatBlock", "<pre>"); }}
-                      className="p-1 px-1.5 text-[9px] text-slate-600 hover:bg-slate-100 rounded-md transition-colors font-mono font-bold"
+                      className="p-1 px-1.5 text-[9px] text-text-secondary hover:bg-bg-tertiary rounded-md transition-colors font-mono font-bold"
                       title="Code Block"
                     >
                       &lt;/&gt;
                     </button>
-                    <div className="w-px h-3.5 bg-slate-200 mx-0.5"></div>
+                    <div className="w-px h-3.5 bg-border-primary mx-0.5"></div>
                     <button
                       onMouseDown={(e) => { e.preventDefault(); handleFormat("insertUnorderedList"); }}
                       className="p-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
@@ -1389,7 +1389,7 @@ const EditorPage = () => {
                       setIsDirty(true);
                     }}
                     rows={2}
-                    className="w-full font-display font-light text-xl sm:text-2xl text-slate-900 tracking-tight mb-4 bg-transparent border-none outline-none placeholder-slate-300 focus:placeholder-slate-200 resize-none h-[64px]"
+                    className="w-full font-display font-light text-xl sm:text-2xl text-text-primary tracking-tight mb-4 bg-transparent border-none outline-none placeholder-text-muted focus:placeholder-text-secondary resize-none h-[64px]"
                     placeholder="Chapter Title..."
                     disabled={aiDrafting}
                   />
@@ -1397,7 +1397,7 @@ const EditorPage = () => {
                   {/* Rich Text Editor Container */}
                   <div className="relative w-full flex-1 flex flex-col editor-content">
                     {aiDrafting && (
-                      <div className="absolute inset-0 bg-[#FAF9F6]/50 backdrop-blur-xs z-10 flex flex-col items-center justify-center gap-3">
+                      <div className="absolute inset-0 bg-bg-primary/50 backdrop-blur-xs z-10 flex flex-col items-center justify-center gap-3">
                         {/* Empty spinner placeholder (staged overlay is shown separately) */}
                       </div>
                     )}
@@ -1407,18 +1407,17 @@ const EditorPage = () => {
                       contentEditable={!aiDrafting}
                       suppressContentEditableWarning
                       onInput={handleInput}
-                      className="w-full flex-1 bg-transparent border-none outline-none font-sans text-slate-700 text-sm leading-relaxed placeholder-slate-400 min-h-[420px] focus:outline-none"
+                      className="w-full flex-1 bg-transparent border-none outline-none font-sans text-text-primary text-sm leading-relaxed placeholder-text-muted min-h-[420px] focus:outline-none"
                       placeholder="Start typing your chapter contents or click 'Draft AI' to auto-generate content..."
                     />
                   </div>
 
-                  {/* PAGINATION / PAGES CONTROL BAR */}
-                  <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-500 bg-white/50 px-4 py-2.5 rounded-xl shrink-0">
+                          <div className="mt-4 pt-4 border-t border-border-primary flex items-center justify-between text-xs font-semibold text-text-secondary bg-bg-secondary/50 px-4 py-2.5 rounded-xl shrink-0">
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => selectPage(currentPageIndex - 1)}
                         disabled={currentPageIndex === 0}
-                        className="p-1 px-2.5 border border-slate-200 hover:border-slate-800 disabled:opacity-30 disabled:hover:border-slate-200 rounded-lg transition-colors cursor-pointer text-[10px] font-bold uppercase tracking-wider flex items-center gap-1"
+                        className="p-1 px-2.5 border border-border-primary hover:border-text-primary disabled:opacity-30 disabled:hover:border-border-primary rounded-lg transition-colors cursor-pointer text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 text-text-secondary hover:text-text-primary bg-bg-primary"
                       >
                         ← Prev
                       </button>
@@ -1429,37 +1428,37 @@ const EditorPage = () => {
                             key={pIdx}
                             onClick={() => selectPage(pIdx)}
                             className={`w-2 h-2 rounded-full transition-all cursor-pointer ${
-                              pIdx === currentPageIndex ? "bg-slate-900 scale-125 shadow-xs" : "bg-slate-200 hover:bg-slate-400"
+                              pIdx === currentPageIndex ? "bg-text-primary scale-125 shadow-xs" : "bg-border-primary hover:bg-text-muted"
                             }`}
                             title={`Go to Page ${pIdx + 1}`}
                           />
                         ))}
                       </div>
-
+ 
                       <button
                         onClick={() => selectPage(currentPageIndex + 1)}
                         disabled={currentPageIndex === chapterPages.length - 1}
-                        className="p-1 px-2.5 border border-slate-200 hover:border-slate-800 disabled:opacity-30 disabled:hover:border-slate-200 rounded-lg transition-colors cursor-pointer text-[10px] font-bold uppercase tracking-wider flex items-center gap-1"
+                        className="p-1 px-2.5 border border-border-primary hover:border-text-primary disabled:opacity-30 disabled:hover:border-border-primary rounded-lg transition-colors cursor-pointer text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 text-text-secondary hover:text-text-primary bg-bg-primary"
                       >
                         Next →
                       </button>
                     </div>
-
+ 
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">
+                      <span className="text-[10px] text-text-muted uppercase tracking-wider font-bold">
                         Page {currentPageIndex + 1} of {chapterPages.length}
                       </span>
-                      <div className="w-px h-3.5 bg-slate-200 mx-1"></div>
+                      <div className="w-px h-3.5 bg-border-primary mx-1"></div>
                       <button
                         onClick={handleAddPage}
-                        className="p-1 px-2 text-[10px] text-indigo-600 hover:text-indigo-850 hover:bg-indigo-50 border border-transparent hover:border-indigo-100 rounded-lg transition-all cursor-pointer font-bold uppercase tracking-wider flex items-center gap-1"
+                        className="p-1 px-2 text-[10px] text-accent-primary hover:text-accent-hover hover:bg-accent-primary/10 border border-transparent hover:border-accent-primary/20 rounded-lg transition-all cursor-pointer font-bold uppercase tracking-wider flex items-center gap-1"
                       >
                         + Add Page
                       </button>
                       {chapterPages.length > 1 && (
                         <button
                           onClick={handleDeletePage}
-                          className="p-1 px-2 text-[10px] text-rose-600 hover:text-rose-850 hover:bg-rose-50 border border-transparent hover:border-rose-100 rounded-lg transition-all cursor-pointer font-bold uppercase tracking-wider flex items-center gap-1"
+                          className="p-1 px-2 text-[10px] text-rose-600 hover:text-rose-850 hover:bg-rose-500/10 border border-transparent hover:border-rose-100 rounded-lg transition-all cursor-pointer font-bold uppercase tracking-wider flex items-center gap-1"
                           title="Delete current page"
                         >
                           🗑️ Delete
@@ -1467,77 +1466,76 @@ const EditorPage = () => {
                       )}
                     </div>
                   </div>
-
+ 
                 </div>
-
+ 
                 {/* BOTTOM STATS BAR */}
-                <div className="h-9 bg-white border-t border-slate-100 px-6 flex items-center justify-between text-[10px] text-slate-400 font-medium">
+                <div className="h-9 bg-bg-secondary border-t border-border-primary px-6 flex items-center justify-between text-[10px] text-text-muted font-medium">
                   <div className="flex items-center gap-4">
-                    <span>Chapter Words: <strong className="text-slate-600">{wordCount}</strong> <span className="opacity-50">(Page: {pageWordCount})</span></span>
-                    <span>Chapter Chars: <strong className="text-slate-600">{charCount}</strong> <span className="opacity-50">(Page: {pageCharCount})</span></span>
+                    <span>Chapter Words: <strong className="text-text-secondary">{wordCount}</strong> <span className="opacity-50">(Page: {pageWordCount})</span></span>
+                    <span>Chapter Chars: <strong className="text-text-secondary">{charCount}</strong> <span className="opacity-50">(Page: {pageCharCount})</span></span>
                   </div>
                   <div>
-                    <span>Est. Reading Time: <strong className="text-slate-600">{readingTime} min</strong></span>
+                    <span>Est. Reading Time: <strong className="text-text-secondary">{readingTime} min</strong></span>
                   </div>
                 </div>
-
               </div>
             )}
           </main>
 
-          {/* RIGHT SIDEBAR: AI Copilot Assistant & Interactive Ask AI Chat */}
+          {/* RIGHT SIDEBAR: AI Assistant & Checklist */}
           <aside
-            className={`bg-white border-l border-slate-100 flex flex-col justify-between shrink-0 transition-all duration-300 overflow-hidden ${
+            className={`bg-bg-secondary border-l border-border-primary flex flex-col justify-between shrink-0 transition-all duration-300 overflow-hidden text-text-primary ${
               rightSidebarOpen ? "w-[320px] opacity-100" : "w-0 opacity-0"
             }`}
           >
-            <div className="flex flex-col h-full divide-y divide-slate-100 min-h-0 overflow-hidden">
+            <div className="flex flex-col h-full divide-y divide-border-primary min-h-0 overflow-hidden">
               
               {/* AI Copilot Writing Actions */}
               <div className="p-4 flex flex-col gap-3 shrink-0">
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-400">
+                  <span className="text-[9px] font-extrabold uppercase tracking-widest text-text-muted">
                     AI Assistant
                   </span>
-                  <span className="text-[8px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded font-mono">
+                  <span className="text-[8px] font-bold text-emerald-600 bg-emerald-50/10 px-1.5 py-0.5 rounded font-mono">
                     {selectedText ? "SELECTED BLOCK" : "WHOLE CHAPTER"}
                   </span>
                 </div>
-
+ 
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => handleAIExtension("rewrite")}
                     disabled={aiDrafting || activeChapterIndex === -1}
-                    className="py-2 px-3 border border-slate-200 hover:border-slate-800 text-[10px] font-bold tracking-wider text-slate-700 hover:text-slate-900 rounded-lg text-center uppercase transition-all cursor-pointer disabled:opacity-50"
+                    className="py-2 px-3 border border-border-primary hover:border-text-primary text-[10px] font-bold tracking-wider text-text-secondary hover:text-text-primary rounded-lg text-center uppercase transition-all bg-bg-primary cursor-pointer disabled:opacity-50"
                   >
                     Rewrite
                   </button>
                   <button
                     onClick={() => handleAIExtension("expand")}
                     disabled={aiDrafting || activeChapterIndex === -1}
-                    className="py-2 px-3 border border-slate-200 hover:border-slate-800 text-[10px] font-bold tracking-wider text-slate-700 hover:text-slate-900 rounded-lg text-center uppercase transition-all cursor-pointer disabled:opacity-50"
+                    className="py-2 px-3 border border-border-primary hover:border-text-primary text-[10px] font-bold tracking-wider text-text-secondary hover:text-text-primary rounded-lg text-center uppercase transition-all bg-bg-primary cursor-pointer disabled:opacity-50"
                   >
                     Expand
                   </button>
                   <button
                     onClick={() => handleAIExtension("shorten")}
                     disabled={aiDrafting || activeChapterIndex === -1}
-                    className="py-2 px-3 border border-slate-200 hover:border-slate-800 text-[10px] font-bold tracking-wider text-slate-700 hover:text-slate-900 rounded-lg text-center uppercase transition-all cursor-pointer disabled:opacity-50"
+                    className="py-2 px-3 border border-border-primary hover:border-text-primary text-[10px] font-bold tracking-wider text-text-secondary hover:text-text-primary rounded-lg text-center uppercase transition-all bg-bg-primary cursor-pointer disabled:opacity-50"
                   >
                     Shorten
                   </button>
                   <button
                     onClick={() => handleAIExtension("grammar")}
                     disabled={aiDrafting || activeChapterIndex === -1}
-                    className="py-2 px-3 border border-slate-200 hover:border-slate-800 text-[10px] font-bold tracking-wider text-slate-700 hover:text-slate-900 rounded-lg text-center uppercase transition-all cursor-pointer disabled:opacity-50"
+                    className="py-2 px-3 border border-border-primary hover:border-text-primary text-[10px] font-bold tracking-wider text-text-secondary hover:text-text-primary rounded-lg text-center uppercase transition-all bg-bg-primary cursor-pointer disabled:opacity-50"
                   >
                     Fix Grammar
                   </button>
                 </div>
-
+ 
                 {/* Change Tone dropdown list */}
                 <div className="flex flex-col gap-1.5 mt-1">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider pl-1">
+                  <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider pl-1">
                     Shift Writing Tone
                   </label>
                   <div className="flex flex-wrap gap-1">
@@ -1546,26 +1544,25 @@ const EditorPage = () => {
                         key={t}
                         onClick={() => handleAIExtension("tone", t)}
                         disabled={aiDrafting || activeChapterIndex === -1}
-                        className="text-[9px] font-semibold text-slate-500 hover:text-slate-955 border border-slate-100 hover:border-slate-350 rounded-md px-2 py-1 bg-slate-50/50 hover:bg-slate-50 transition-all cursor-pointer"
+                        className="text-[9px] font-semibold text-text-secondary hover:text-text-primary border border-border-primary hover:border-text-primary rounded-md px-2 py-1 bg-bg-tertiary/50 hover:bg-bg-tertiary transition-all cursor-pointer"
                       >
                         {t}
                       </button>
                     ))}
-                  </div>
                 </div>
               </div>
+            </div>
 
-              {/* Interactive Ask AI Chat Pane */}
+            {/* Interactive Ask AI Chat Pane */}
               <div className="flex-1 flex flex-col justify-between overflow-hidden min-h-0">
-                
                 {/* Chat header */}
-                <div className="px-4 py-2.5 bg-slate-50/50 flex items-center gap-1.5 shrink-0">
-                  <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                <div className="px-4 py-2.5 bg-bg-tertiary/50 flex items-center gap-1.5 shrink-0">
+                  <span className="w-2 h-2 rounded-full bg-accent-primary animate-pulse"></span>
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-text-muted">
                     Ask AI Co-Writer
                   </span>
                 </div>
-
+ 
                 {/* Chat Log history */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-3 font-sans text-xs">
                   {aiChatHistory.map((msg, i) => (
@@ -1575,14 +1572,14 @@ const EditorPage = () => {
                         msg.sender === "user" ? "ml-auto items-end" : "mr-auto items-start"
                       }`}
                     >
-                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">
+                      <span className="text-[8px] font-bold text-text-muted uppercase tracking-widest mb-0.5">
                         {msg.sender === "user" ? "You" : "AI"}
                       </span>
                       <div
                         className={`rounded-2xl px-3 py-2 border font-medium leading-relaxed ${
                           msg.sender === "user"
-                            ? "bg-slate-950 border-slate-950 text-white"
-                            : "bg-slate-50 border-slate-100 text-slate-700"
+                            ? "bg-accent-primary border-accent-primary text-white"
+                            : "bg-bg-tertiary border-border-primary text-text-primary"
                         }`}
                         dangerouslySetInnerHTML={{ __html: msg.text }}
                       />
@@ -1590,21 +1587,21 @@ const EditorPage = () => {
                   ))}
                   {isAiChatLoading && (
                     <div className="flex flex-col max-w-[85%] mr-auto items-start">
-                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5 animate-pulse">
+                      <span className="text-[8px] font-bold text-text-muted uppercase tracking-widest mb-0.5 animate-pulse">
                         AI Thinking
                       </span>
-                      <div className="rounded-2xl px-4 py-2.5 bg-slate-50 border border-slate-100 flex items-center gap-1.5">
-                        <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
-                        <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
-                        <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                      <div className="rounded-2xl px-4 py-2.5 bg-bg-tertiary border border-border-primary flex items-center gap-1.5">
+                        <div className="w-1.5 h-1.5 bg-text-muted rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
+                        <div className="w-1.5 h-1.5 bg-text-muted rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
+                        <div className="w-1.5 h-1.5 bg-text-muted rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
                       </div>
                     </div>
                   )}
                   <div ref={chatEndRef} />
                 </div>
-
+ 
                 {/* Suggestions Pills & Input */}
-                <div className="p-3 bg-white border-t border-slate-100 flex flex-col gap-2 shrink-0">
+                <div className="p-3 bg-bg-secondary border-t border-border-primary flex flex-col gap-2 shrink-0">
                   
                   {/* Suggestions pills */}
                   <div className="flex flex-wrap gap-1 justify-start">
@@ -1613,20 +1610,20 @@ const EditorPage = () => {
                         key={pill}
                         onClick={() => handleSuggestionClick(pill)}
                         disabled={isAiChatLoading || activeChapterIndex === -1}
-                        className="text-[9px] font-semibold bg-indigo-50/50 hover:bg-indigo-50 border border-indigo-100/50 text-indigo-700 px-2 py-0.5 rounded-full cursor-pointer disabled:opacity-50 transition-all"
+                        className="text-[9px] font-semibold bg-accent-primary/10 hover:bg-accent-primary/20 border border-accent-primary/20 text-accent-primary px-2 py-0.5 rounded-full cursor-pointer disabled:opacity-50 transition-all"
                       >
                         {pill}
                       </button>
                     ))}
                   </div>
-
+ 
                   {/* Input form */}
                   <form
                     onSubmit={(e) => {
                       e.preventDefault();
                       handleSendAIChat();
                     }}
-                    className="relative flex items-center bg-slate-50 border border-slate-200 rounded-xl overflow-hidden focus-within:border-slate-800 transition-colors"
+                    className="relative flex items-center bg-bg-tertiary border border-border-primary rounded-xl overflow-hidden focus-within:border-text-primary transition-colors"
                   >
                     <input
                       type="text"
@@ -1634,12 +1631,12 @@ const EditorPage = () => {
                       onChange={(e) => setAiChatInput(e.target.value)}
                       placeholder={selectedText ? "Ask about selected text..." : "Ask AI about this chapter..."}
                       disabled={isAiChatLoading || activeChapterIndex === -1}
-                      className="w-full pl-3 pr-10 py-2.5 bg-transparent border-none text-xs outline-none placeholder-slate-400 text-slate-700"
+                      className="w-full pl-3 pr-10 py-2.5 bg-transparent border-none text-xs outline-none placeholder-text-muted text-text-primary"
                     />
                     <button
                       type="submit"
                       disabled={isAiChatLoading || !aiChatInput.trim()}
-                      className="absolute right-1.5 p-1.5 rounded-lg bg-slate-900 text-white hover:bg-slate-800 disabled:bg-slate-100 disabled:text-slate-350 cursor-pointer transition-colors"
+                      className="absolute right-1.5 p-1.5 rounded-lg bg-accent-primary text-white hover:bg-accent-hover disabled:bg-bg-tertiary disabled:text-text-muted cursor-pointer transition-colors"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
@@ -1647,9 +1644,7 @@ const EditorPage = () => {
                     </button>
                   </form>
                 </div>
-
               </div>
-
             </div>
           </aside>
 
@@ -1659,27 +1654,27 @@ const EditorPage = () => {
       {/* MODAL 1: AI Outline Builder parameters Form */}
       {isOutlineModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white rounded-[24px] border border-slate-100 shadow-2xl p-6 sm:p-8 w-full max-w-[420px] mx-4 animate-scaleUp">
+          <div className="bg-bg-primary rounded-[24px] border border-border-primary shadow-2xl p-6 sm:p-8 w-full max-w-[420px] mx-4 animate-scaleUp text-text-primary">
             
             <div className="flex items-center gap-3 mb-4">
-              <div className="h-9 w-9 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center">
+              <div className="h-9 w-9 rounded-full bg-accent-primary/10 border border-accent-primary/20 text-accent-primary flex items-center justify-center">
                 <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
               </div>
-              <h3 className="font-display font-medium text-lg text-slate-900">
+              <h3 className="font-display font-medium text-lg text-text-primary">
                 Generate eBook Outline
               </h3>
             </div>
-
-            <p className="text-slate-400 text-[11px] font-medium mb-5 leading-relaxed">
+ 
+            <p className="text-text-secondary text-[11px] font-medium mb-5 leading-relaxed">
               Fine-tune the parameters below. The AI will structure a tailored Table of Contents reflecting these settings.
             </p>
-
+ 
             <div className="flex flex-col gap-4">
               {/* Topic Input */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider pl-1">
+                <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider pl-1">
                   eBook Topic
                 </label>
                 <input
@@ -1687,13 +1682,13 @@ const EditorPage = () => {
                   value={outlineParams.topic}
                   onChange={(e) => setOutlineParams({ ...outlineParams, topic: e.target.value })}
                   placeholder="e.g. Artificial Intelligence Basics"
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-slate-800 rounded-xl px-3 py-2.5 text-xs outline-none text-slate-700"
+                  className="w-full bg-bg-secondary border border-border-primary focus:border-text-primary rounded-xl px-3 py-2.5 text-xs outline-none text-text-primary"
                 />
               </div>
-
+ 
               {/* Target Audience Input */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider pl-1">
+                <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider pl-1">
                   Target Audience
                 </label>
                 <input
@@ -1701,20 +1696,20 @@ const EditorPage = () => {
                   value={outlineParams.audience}
                   onChange={(e) => setOutlineParams({ ...outlineParams, audience: e.target.value })}
                   placeholder="e.g. Students, Software Engineers"
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-slate-800 rounded-xl px-3 py-2.5 text-xs outline-none text-slate-700"
+                  className="w-full bg-bg-secondary border border-border-primary focus:border-text-primary rounded-xl px-3 py-2.5 text-xs outline-none text-text-primary"
                 />
               </div>
-
+ 
               {/* Writing Style / Tone Dropdown */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider pl-1">
+                  <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider pl-1">
                     Tone / Style
                   </label>
                   <select
                     value={outlineParams.tone}
                     onChange={(e) => setOutlineParams({ ...outlineParams, tone: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs outline-none text-slate-750 cursor-pointer"
+                    className="w-full bg-bg-secondary border border-border-primary rounded-xl px-3 py-2.5 text-xs outline-none text-text-primary cursor-pointer"
                   >
                     <option value="Professional">Professional</option>
                     <option value="Academic">Academic</option>
@@ -1723,15 +1718,15 @@ const EditorPage = () => {
                     <option value="Dramatic">Dramatic</option>
                   </select>
                 </div>
-
+ 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider pl-1">
+                  <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider pl-1">
                     Outline Length
                   </label>
                   <select
                     value={outlineParams.length}
                     onChange={(e) => setOutlineParams({ ...outlineParams, length: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs outline-none text-slate-750 cursor-pointer"
+                    className="w-full bg-bg-secondary border border-border-primary rounded-xl px-3 py-2.5 text-xs outline-none text-text-primary cursor-pointer"
                   >
                     <option value="3 Chapters">Short (3 Chapters)</option>
                     <option value="5 Chapters">Medium (5 Chapters)</option>
@@ -1740,22 +1735,21 @@ const EditorPage = () => {
                 </div>
               </div>
             </div>
-
+ 
             <div className="flex items-center justify-end gap-3 mt-8">
               <button
                 onClick={() => setIsOutlineModalOpen(false)}
-                className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-slate-800 cursor-pointer"
+                className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-text-secondary hover:text-text-primary cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={handleGenerateOutline}
-                className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+                className="px-5 py-2.5 bg-accent-primary hover:bg-accent-hover text-white text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer"
               >
                 Build Outline
               </button>
             </div>
-
           </div>
         </div>
       )}
@@ -1763,11 +1757,11 @@ const EditorPage = () => {
       {/* MODAL 2: AI Cover Builder Editor */}
       {isCoverModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white rounded-[24px] border border-slate-100 shadow-2xl p-6 sm:p-8 w-full max-w-[620px] mx-4 animate-scaleUp flex flex-col md:flex-row gap-6">
+          <div className="bg-bg-primary rounded-[24px] border border-border-primary shadow-2xl p-6 sm:p-8 w-full max-w-[620px] mx-4 animate-scaleUp flex flex-col md:flex-row gap-6 text-text-primary">
             
             {/* Left Column: Cover preview */}
-            <div className="flex-1 flex flex-col items-center justify-center bg-slate-50/50 rounded-2xl p-4 border border-slate-100">
-              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-3">
+            <div className="flex-1 flex flex-col items-center justify-center bg-bg-tertiary rounded-2xl p-4 border border-border-primary">
+              <span className="text-[8px] font-bold text-text-muted uppercase tracking-widest mb-3">
                 Live Cover Preview
               </span>
               <BookCover
@@ -1781,22 +1775,22 @@ const EditorPage = () => {
                 className="w-[140px]"
               />
             </div>
-
+ 
             {/* Right Column: Controls */}
             <div className="flex-1 flex flex-col justify-between">
               <div>
-                <h3 className="font-display font-medium text-lg text-slate-900 mb-1">
+                <h3 className="font-display font-medium text-lg text-text-primary mb-1">
                   AI Cover Builder
                 </h3>
-                <p className="text-slate-400 text-[10px] font-semibold mb-4 leading-relaxed uppercase tracking-wider text-slate-500">
+                <p className="text-[10px] font-semibold mb-4 leading-relaxed uppercase tracking-wider text-text-muted">
                   Personalize your eBook Cover style
                 </p>
-
+ 
                 <div className="flex flex-col gap-3">
                   
                   {/* Title input */}
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider pl-1">
+                    <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider pl-1">
                       Cover Title
                     </label>
                     <input
@@ -1804,13 +1798,13 @@ const EditorPage = () => {
                       value={tempTitle}
                       onChange={(e) => setTempTitle(e.target.value)}
                       placeholder="eBook Title"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-xs outline-none text-slate-700"
+                      className="w-full bg-bg-secondary border border-border-primary rounded-lg px-2.5 py-2 text-xs outline-none text-text-primary"
                     />
                   </div>
 
                   {/* Subtitle input */}
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider pl-1">
+                    <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider pl-1">
                       Cover Subtitle / Tagline
                     </label>
                     <input
@@ -1818,19 +1812,19 @@ const EditorPage = () => {
                       value={tempSubtitle}
                       onChange={(e) => setTempSubtitle(e.target.value)}
                       placeholder="e.g. FIRST EDITION, DIGITAL PUBLICATION"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-xs outline-none text-slate-700"
+                      className="w-full bg-bg-secondary border border-border-primary rounded-lg px-2.5 py-2 text-xs outline-none text-text-primary"
                     />
                   </div>
-
+ 
                   {/* Layout Style dropdown */}
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider pl-1">
+                    <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider pl-1">
                       Design Layout Style
                     </label>
                     <select
                       value={tempStyle}
                       onChange={(e) => setTempStyle(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-xs outline-none text-slate-750 cursor-pointer font-medium"
+                      className="w-full bg-bg-secondary border border-border-primary rounded-lg px-2.5 py-2 text-xs outline-none text-text-primary cursor-pointer font-medium"
                     >
                       <option value="modern">Modern (Default)</option>
                       <option value="editorial">Editorial Frame</option>
@@ -1838,10 +1832,10 @@ const EditorPage = () => {
                       <option value="geometric">Geometric Backdrop</option>
                     </select>
                   </div>
-
+ 
                   {/* Cover Image URL input */}
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider pl-1">
+                    <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider pl-1">
                       Cover Image URL
                     </label>
                     <input
@@ -1849,14 +1843,14 @@ const EditorPage = () => {
                       value={tempImageUrl}
                       onChange={(e) => setTempImageUrl(e.target.value)}
                       placeholder="e.g. https://images.unsplash.com/photo-..."
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-xs outline-none text-slate-700 font-mono text-[10px]"
+                      className="w-full bg-bg-secondary border border-border-primary rounded-lg px-2.5 py-2 text-xs outline-none text-text-primary font-mono text-[10px]"
                     />
                   </div>
-
+ 
                   {/* Gradient picker */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider pl-1">
-                      Cover Background Color <span className="text-[8px] text-slate-400 font-normal lowercase">(only if Image URL is empty)</span>
+                    <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider pl-1">
+                      Cover Background Color <span className="text-[8px] text-text-muted font-normal lowercase">(only if Image URL is empty)</span>
                     </label>
                     <div className="flex items-center gap-1.5 flex-wrap">
                       {[
@@ -1871,7 +1865,7 @@ const EditorPage = () => {
                           key={item.name}
                           onClick={() => setTempGradient(item.grad)}
                           className={`w-6 h-6 rounded-full border transition-all cursor-pointer ${
-                            tempGradient === item.grad ? "border-slate-900 scale-110 shadow-md" : "border-transparent hover:scale-105"
+                            tempGradient === item.grad ? "border-text-primary scale-110 shadow-md" : "border-transparent hover:scale-105"
                           }`}
                           style={{ background: item.grad }}
                           title={item.name}
@@ -1879,20 +1873,20 @@ const EditorPage = () => {
                       ))}
                     </div>
                   </div>
-
+ 
                 </div>
               </div>
-
+ 
               <div className="flex items-center justify-end gap-3 mt-6">
                 <button
                   onClick={() => setIsCoverModalOpen(false)}
-                  className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-slate-800 cursor-pointer"
+                  className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-text-secondary hover:text-text-primary cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSaveCover}
-                  className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+                  className="px-5 py-2.5 bg-accent-primary hover:bg-accent-hover text-white text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer"
                 >
                   Apply & Save
                 </button>
@@ -1906,43 +1900,43 @@ const EditorPage = () => {
       {/* MODAL 3: Animated Staged Checklist Loader overlay */}
       {isGenerating && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-fadeIn">
-          <div className="bg-white rounded-[28px] border border-slate-100 shadow-2xl p-6 sm:p-8 w-full max-w-[360px] mx-4 text-center animate-scaleUp">
+          <div className="bg-bg-primary rounded-[28px] border border-border-primary shadow-2xl p-6 sm:p-8 w-full max-w-[360px] mx-4 text-center animate-scaleUp text-text-primary">
             
             <div className="relative flex items-center justify-center mb-6">
               {/* Spinner background outline */}
-              <div className="w-16 h-16 border-4 border-slate-100 border-t-indigo-600 rounded-full animate-spin"></div>
-              <div className="absolute font-sans text-xs font-extrabold text-indigo-600">AI</div>
+              <div className="w-16 h-16 border-4 border-border-primary border-t-accent-primary rounded-full animate-spin"></div>
+              <div className="absolute font-sans text-xs font-extrabold text-accent-primary">AI</div>
             </div>
-
-            <h4 className="font-display font-medium text-base text-slate-900 mb-1">
+ 
+            <h4 className="font-display font-medium text-base text-text-primary mb-1">
               {generationType === "outline" ? "Generating outline..." : "Co-writing draft..."}
             </h4>
-            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-6">
+            <p className="text-text-muted text-[10px] font-bold uppercase tracking-widest mb-6">
               Powered by Gemini 2.5
             </p>
-
+ 
             {/* Checklist states list */}
-            <div className="flex flex-col gap-2.5 text-left bg-slate-50 p-4 rounded-xl border border-slate-100 font-sans text-[11px] font-semibold text-slate-600">
+            <div className="flex flex-col gap-2.5 text-left bg-bg-secondary p-4 rounded-xl border border-border-primary font-sans text-[11px] font-semibold text-text-secondary">
               {(generationType === "outline" ? outlineSteps : chapterSteps).map((stepText, idx) => {
                 const isDone = generationStep > idx;
                 const isCurrent = generationStep === idx;
-
+ 
                 return (
                   <div
                     key={idx}
                     className={`flex items-center gap-2 transition-all duration-300 ${
-                      isDone ? "opacity-50 text-slate-400 line-through font-normal" : isCurrent ? "opacity-100 text-slate-900" : "opacity-30"
+                      isDone ? "opacity-50 text-text-muted line-through font-normal" : isCurrent ? "opacity-100 text-text-primary animate-pulse" : "opacity-30"
                     }`}
                   >
                     {isDone ? (
                       <span className="text-emerald-500 font-bold shrink-0">✓</span>
                     ) : isCurrent ? (
                       <span className="relative flex h-1.5 w-1.5 shrink-0">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-indigo-600"></span>
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-ring opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-accent-primary"></span>
                       </span>
                     ) : (
-                      <span className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0"></span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-border-primary shrink-0"></span>
                     )}
                     <span className="truncate">{stepText}</span>
                   </div>

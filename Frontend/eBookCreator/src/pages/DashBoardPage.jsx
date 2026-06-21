@@ -666,7 +666,7 @@ const DashboardPage = () => {
             
             {/* If filters yielded no matches within existing categories */}
             {draftBooks.length === 0 && publishedBooksList.length === 0 && (
-              <div className="text-center py-10 w-full text-slate-400 text-xs sm:text-sm font-medium">
+              <div className="text-center py-10 w-full text-text-muted text-xs sm:text-sm font-medium">
                 No eBooks found matching your search query or filters.
               </div>
             )}
@@ -748,8 +748,8 @@ const DashboardPage = () => {
         title="Delete eBook"
       >
         <div className="flex flex-col gap-4 text-left">
-          <p className="text-slate-500 text-xs sm:text-sm font-medium leading-relaxed">
-            Are you sure you want to delete <strong className="text-slate-800">"{selectedBook?.title}"</strong>? This action is permanent and will delete all chapters and drafts.
+          <p className="text-text-secondary text-xs sm:text-sm font-medium leading-relaxed">
+            Are you sure you want to delete <strong className="text-text-primary">"{selectedBook?.title}"</strong>? This action is permanent and will delete all chapters and drafts.
           </p>
           <div className="flex items-center gap-3 mt-4">
             <button
@@ -758,7 +758,7 @@ const DashboardPage = () => {
                 setSelectedBook(null);
               }}
               disabled={actionLoading}
-              className="flex-1 h-[46px] border border-slate-200 hover:border-slate-800 text-slate-600 hover:text-slate-900 text-[10px] font-bold tracking-wider rounded-xl transition-all uppercase cursor-pointer"
+              className="flex-1 h-[46px] border border-border-primary hover:border-text-primary text-text-secondary hover:text-text-primary bg-bg-primary text-[10px] font-bold tracking-wider rounded-xl transition-all uppercase cursor-pointer"
             >
               Cancel
             </button>

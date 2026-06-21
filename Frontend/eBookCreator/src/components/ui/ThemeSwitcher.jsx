@@ -33,7 +33,7 @@ const ThemeSwitcher = ({ className = "" }) => {
 
   return (
     <div className={`flex items-center gap-3 bg-bg-secondary border border-border-primary px-3 py-1.5 rounded-full shadow-xs transition-all duration-250 ${className}`}>
-      <span className="text-[10px] uppercase tracking-widest font-extrabold text-text-secondary mr-1 select-none">
+      <span className="text-[10px] uppercase tracking-widest font-extrabold text-text-secondary mr-1 select-none hidden sm:inline">
         Theme
       </span>
       <div className="flex items-center gap-2">

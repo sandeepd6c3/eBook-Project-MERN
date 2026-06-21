@@ -29,22 +29,22 @@ const Testimonials = () => {
   ];
 
   return (
-    <section className="py-24 bg-white border-b border-slate-100 relative">
+    <section className="py-24 bg-bg-primary border-b border-border-primary relative transition-colors duration-250">
       {/* Soft abstract watercolor gradient background */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/5 h-3/5 bg-brand-purple/3 blur-[90px] rounded-full pointer-events-none"></div>
 
       <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
         
-        <h2 className="font-display font-normal text-3xl sm:text-4xl text-slate-900 mb-2">
+        <h2 className="font-display font-normal text-3xl sm:text-4xl text-text-primary mb-2">
           What Our Writers Say
         </h2>
-        <p className="text-slate-500 text-xs mb-16">
+        <p className="text-text-secondary text-xs mb-16">
           Read reviews from authors, marketers, and developers automating ebook publishing.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {reviews.map((rev, index) => (
-            <div key={index} className="border border-slate-250 bg-white p-6 relative flex flex-col justify-between items-center rounded-[2px] shadow-sm hover:shadow-md transition-shadow duration-300">
+            <div key={index} className="border border-border-primary bg-bg-secondary p-6 relative flex flex-col justify-between items-center rounded-[2px] shadow-sm hover:shadow-md transition-shadow duration-300">
               
               {/* Double Quotes Icon at the top */}
               <div className="text-5xl font-serif text-brand-purple/20 select-none leading-none -mt-4 mb-2">
@@ -52,7 +52,7 @@ const Testimonials = () => {
               </div>
 
               {/* Review Text */}
-              <p className="text-xs text-slate-600 leading-relaxed italic text-center mb-6 min-h-[72px]">
+              <p className="text-xs text-text-secondary leading-relaxed italic text-center mb-6 min-h-[72px]">
                 "{rev.text}"
               </p>
 
@@ -63,12 +63,12 @@ const Testimonials = () => {
                 </div>
                 
                 {/* Custom Avatar with initials */}
-                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-xs text-slate-700 mb-3 border border-slate-200">
+                <div className="w-10 h-10 rounded-full bg-bg-tertiary flex items-center justify-center font-bold text-xs text-text-primary mb-3 border border-border-primary">
                   {rev.name.split(" ").map(n => n[0]).join("")}
                 </div>
 
-                <h4 className="text-xs font-bold text-slate-800">{rev.name}</h4>
-                <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider mt-0.5">{rev.role}</span>
+                <h4 className="text-xs font-bold text-text-primary">{rev.name}</h4>
+                <span className="text-[10px] text-text-muted font-mono uppercase tracking-wider mt-0.5">{rev.role}</span>
               </div>
 
             </div>

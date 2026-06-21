@@ -46,15 +46,15 @@ const Features = () => {
   ];
 
   return (
-    <section id="features" className="py-24 bg-white border-b border-slate-100">
+    <section id="features" className="py-24 bg-bg-primary border-b border-border-primary scroll-mt-20 transition-colors duration-250">
       <div className="max-w-7xl mx-auto px-6">
         
         {/* Title */}
         <div className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="font-display font-normal text-3xl sm:text-4xl text-slate-900 mb-2">
+          <h2 className="font-display font-normal text-3xl sm:text-4xl text-text-primary mb-2">
             Top eBook AI Features
           </h2>
-          <p className="text-slate-500 text-xs">
+          <p className="text-text-secondary text-xs">
             Explore the core architectural blocks that power our ebook generation pipeline.
           </p>
         </div>
@@ -65,38 +65,38 @@ const Features = () => {
             <div key={index} className="flex flex-col items-center text-center group">
               
               {/* 3D-like Book Cover mockup (CSS-based) */}
-              <div className="w-44 h-60 bg-white mb-6 relative shadow-md group-hover:shadow-lg group-hover:-translate-y-2 transition-all duration-300 rounded-[1px] overflow-hidden border border-slate-200/60 flex flex-col justify-between p-4">
+              <div className="w-44 h-60 bg-bg-secondary mb-6 relative shadow-md group-hover:shadow-lg group-hover:-translate-y-2 transition-all duration-300 rounded-[1px] overflow-hidden border border-border-primary flex flex-col justify-between p-4">
                 {/* Spine shadow */}
-                <div className="absolute top-0 left-0 w-2 h-full bg-slate-900/[0.06] pointer-events-none"></div>
-                <div className="absolute top-0 left-2 w-[1px] h-full bg-slate-900/[0.03] pointer-events-none"></div>
+                <div className="absolute top-0 left-0 w-2 h-full bg-text-primary/[0.06] pointer-events-none"></div>
+                <div className="absolute top-0 left-2 w-[1px] h-full bg-text-primary/[0.03] pointer-events-none"></div>
                 
-                <div className="flex items-center justify-between text-[8px] font-bold text-slate-400 font-mono">
+                <div className="flex items-center justify-between text-[8px] font-bold text-text-muted font-mono">
                   <span>{item.volume}</span>
                   <span>EBOOKAI</span>
                 </div>
 
                 <div className="my-auto py-2 text-left pl-2">
                   <div className={`h-1 w-6 bg-gradient-to-r ${item.color} mb-3`}></div>
-                  <h4 className="font-display font-semibold text-sm text-slate-800 leading-snug">
+                  <h4 className="font-display font-semibold text-sm text-text-primary leading-snug">
                     {item.title}
                   </h4>
-                  <p className="text-[9px] text-slate-400 font-mono uppercase tracking-wider mt-1">
+                  <p className="text-[9px] text-text-muted font-mono uppercase tracking-wider mt-1">
                     {item.subtitle}
                   </p>
                 </div>
 
-                <div className="text-[8px] text-slate-400 font-mono border-t border-slate-100 pt-2 text-left pl-2">
+                <div className="text-[8px] text-text-muted font-mono border-t border-border-primary pt-2 text-left pl-2">
                   Node module active
                 </div>
               </div>
 
               {/* Category */}
-              <span className="text-[9px] font-bold tracking-widest text-slate-400 uppercase mb-1">
+              <span className="text-[9px] font-bold tracking-widest text-text-muted uppercase mb-1">
                 {item.category}
               </span>
 
               {/* Title */}
-              <h3 className="font-display font-bold text-slate-800 text-sm mb-1 group-hover:text-brand-blue transition-colors duration-200">
+              <h3 className="font-display font-bold text-text-primary text-sm mb-1 group-hover:text-brand-blue transition-colors duration-200">
                 {item.title}
               </h3>
 
@@ -111,14 +111,14 @@ const Features = () => {
               </div>
 
               {/* Description */}
-              <p className="text-xs text-slate-500 max-w-[200px] leading-relaxed mb-6 min-h-[48px]">
+              <p className="text-xs text-text-secondary max-w-[200px] leading-relaxed mb-6 min-h-[48px]">
                 {item.description}
               </p>
 
               {/* ADD TO PIPELINE action link */}
               <Link 
                 to="/signup" 
-                className="inline-flex items-center gap-1.5 text-[9px] font-bold tracking-widest uppercase text-slate-900 border-b border-slate-900 pb-0.5 hover:text-brand-blue hover:border-brand-blue transition-colors duration-200"
+                className="inline-flex items-center gap-1.5 text-[9px] font-bold tracking-widest uppercase text-text-primary border-b border-text-primary pb-0.5 hover:text-brand-blue hover:border-brand-blue transition-colors duration-200"
               >
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />

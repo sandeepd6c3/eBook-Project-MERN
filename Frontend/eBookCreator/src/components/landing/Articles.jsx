@@ -28,16 +28,16 @@ const Articles = () => {
   ];
 
   return (
-    <section className="py-24 bg-white border-b border-slate-100">
+    <section className="py-24 bg-bg-primary border-b border-border-primary transition-colors duration-250">
       <div className="max-w-7xl mx-auto px-6">
         
         {/* Header containing title and outline button */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-16">
           <div className="text-left">
-            <h2 className="font-display font-normal text-3xl sm:text-4xl text-slate-900 mb-2">
+            <h2 className="font-display font-normal text-3xl sm:text-4xl text-text-primary mb-2">
               News & Articles
             </h2>
-            <p className="text-slate-500 text-xs">
+            <p className="text-text-secondary text-xs">
               Stay updated with publishing news, writing methodologies, and system updates.
             </p>
           </div>
@@ -54,33 +54,33 @@ const Articles = () => {
             <div key={index} className="flex flex-col text-left group">
               
               {/* Visual Cover Panel */}
-              <div className={`w-full aspect-video ${art.image} mb-6 border border-slate-200/50 hover:opacity-95 transition-opacity duration-300 relative overflow-hidden rounded-[2px] flex items-center justify-center`}>
-                <span className="font-display font-bold text-slate-400/40 text-lg uppercase tracking-wider">
+              <div className={`w-full aspect-video ${art.image} mb-6 border border-border-primary hover:opacity-95 transition-opacity duration-300 relative overflow-hidden rounded-[2px] flex items-center justify-center`}>
+                <span className="font-display font-bold text-text-muted/40 text-lg uppercase tracking-wider">
                   {art.category}
                 </span>
               </div>
 
               {/* Meta */}
-              <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3">
+              <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-wider text-text-muted mb-3">
                 <span className="text-brand-purple">{art.category}</span>
                 <span>•</span>
                 <span>{art.date}</span>
               </div>
 
               {/* Title */}
-              <h3 className="font-display font-bold text-slate-800 text-base mb-2 group-hover:text-brand-blue transition-colors duration-200 leading-snug">
+              <h3 className="font-display font-bold text-text-primary text-base mb-2 group-hover:text-brand-blue transition-colors duration-200 leading-snug">
                 {art.title}
               </h3>
 
               {/* Description */}
-              <p className="text-xs text-slate-500 leading-relaxed mb-4">
+              <p className="text-text-secondary text-xs leading-relaxed mb-4">
                 {art.desc}
               </p>
 
               {/* Link */}
               <Link 
                 to="/signup" 
-                className="inline-flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase text-slate-900 group-hover:text-brand-blue transition-colors duration-200"
+                className="inline-flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase text-text-primary group-hover:text-brand-blue transition-colors duration-200"
               >
                 Read More ➔
               </Link>

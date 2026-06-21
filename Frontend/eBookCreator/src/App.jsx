@@ -1,6 +1,7 @@
 import React from 'react'
 import { Routes, Route } from 'react-router-dom'
 import ProtectedRouts from './components/auth/ProtectedRouts'
+import ScrollToTop from './components/layout/ScrollToTop'
 import LoginPage from './pages/LoginPage'
 import LandingPage from './pages/LandingPage'
 import SignUpPage from './pages/SignUpPage'
@@ -11,9 +12,12 @@ import ViewBookPage from './pages/ViewBookPage'
 import DiscoverPage from './pages/DiscoverPage'
 
 
+import ThemeSwitcher from './components/ui/ThemeSwitcher'
+
 const App = () => {
   return (
-    <div>
+    <div className="min-h-screen bg-bg-primary text-text-primary transition-colors duration-250 flex flex-col">
+      <ScrollToTop />
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
