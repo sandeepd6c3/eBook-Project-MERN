@@ -68,6 +68,25 @@ const bookSchema = new mongoose.Schema(
             default: 0,
         },
         reviews: [reviewSchema],
+        exportConfig: {
+            pageSize: { type: String, default: "letter" },
+            marginStyle: { type: String, default: "normal" },
+            customMargins: {
+                top: { type: Number, default: 1 },
+                bottom: { type: Number, default: 1 },
+                left: { type: Number, default: 1 },
+                right: { type: Number, default: 1 }
+            },
+            fontFamily: { type: String, default: "Lora" },
+            fontSize: { type: Number, default: 16 },
+            lineHeight: { type: Number, default: 1.6 },
+            textAlignment: { type: String, default: "justify" },
+            includeCover: { type: Boolean, default: true },
+            includeTOC: { type: Boolean, default: true },
+            chapterPageBreaks: { type: Boolean, default: true },
+            headerStyle: { type: String, default: "title-chapter" },
+            footerStyle: { type: String, default: "page-center" }
+        }
     },
     {
         timestamps: true,

@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import Button from "../components/ui/Button";
 import ThemeSwitcher from "../components/ui/ThemeSwitcher";
 import toast from "react-hot-toast";
+import ExportSettingsModal from "../components/ui/ExportSettingsModal";
 
 const API_BOOKS = "http://localhost:5000/api/books";
 const API_AI = "http://localhost:5000/api/ai";
@@ -145,6 +146,7 @@ const EditorPage = () => {
 
   // AI Cover Builder parameters
   const [isCoverModalOpen, setIsCoverModalOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [coverConfig, setCoverConfig] = useState({
     gradient: "linear-gradient(135deg, #1e3a8a, #3b82f6)",
     style: "modern",
@@ -814,13 +816,63 @@ const EditorPage = () => {
     }
   };
 
+  // Save modified export configurations
+  const handleSaveExportConfig = async (newConfig) => {
+    const token = localStorage.getItem("token");
+    try {
+      const response = await fetch(`${API_BOOKS}/${bookId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ exportConfig: newConfig }),
+      });
+
+      if (!response.ok) throw new Error("Failed to save export configuration");
+
+      const updatedBook = await response.json();
+      setBook(updatedBook);
+      setIsExportModalOpen(false);
+      toast.success("eBook layout templates saved!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Could not save export templates configuration.");
+    }
+  };
+
   // Export Book formats
-  const handleExport = (format) => {
+  const handleExport = (format, customConfig = null) => {
     setExportDropdownOpen(false);
     if (!book || !book.chapters || book.chapters.length === 0) {
       toast.error("eBook outline is empty. Write chapters first.");
       return;
     }
+
+    // Load styling config
+    const config = customConfig || book.exportConfig || {
+      pageSize: "letter",
+      marginStyle: "normal",
+      customMargins: { top: 1, bottom: 1, left: 1, right: 1 },
+      fontFamily: "Lora",
+      fontSize: 16,
+      lineHeight: 1.6,
+      textAlignment: "justify",
+      includeCover: true,
+      includeTOC: true,
+      chapterPageBreaks: true,
+      headerStyle: "title-chapter",
+      footerStyle: "page-center"
+    };
+
+    const fontStackMap = {
+      Lora: "'Lora', Georgia, serif",
+      Georgia: "Georgia, serif",
+      "Playfair Display": "'Playfair Display', Georgia, serif",
+      Outfit: "'Outfit', 'Inter', sans-serif",
+      Inter: "'Inter', sans-serif",
+    };
+    const fontCss = fontStackMap[config.fontFamily] || "Georgia, serif";
 
     if (format === "markdown") {
       let content = `# ${book.title}\n\n`;
@@ -852,31 +904,254 @@ const EditorPage = () => {
       toast.success("Markdown exported!");
     } else if (format === "html" || format === "pdf") {
       const printWindow = window.open("", "_blank");
+      
+      // Determine page margins
+      let marginRule = "margin: 1in;";
+      if (config.marginStyle === "compact") marginRule = "margin: 0.5in;";
+      else if (config.marginStyle === "wide") marginRule = "margin: 1.5in;";
+      else if (config.marginStyle === "custom" && config.customMargins) {
+        marginRule = `margin: ${config.customMargins.top}in ${config.customMargins.right}in ${config.customMargins.bottom}in ${config.customMargins.left}in;`;
+      }
+
+      // Determine page size
+      let sizeRule = "size: letter;";
+      if (config.pageSize === "a4") sizeRule = "size: A4;";
+      else if (config.pageSize === "a5") sizeRule = "size: A5;";
+      else if (config.pageSize === "pocket") sizeRule = "size: 5in 8in;";
+
       let fullHTML = `<html><head><title>${book.title}</title>`;
+      
+      // Preload Google Fonts link tag
+      fullHTML += `
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Lora:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+      `;
+
+      // CSS styles
       fullHTML += `<style>
-        body { font-family: Georgia, serif; line-height: 1.7; padding: 2in; max-width: 800px; margin: auto; color: #1e293b; }
-        h1 { text-align: center; font-size: 2.75em; margin-bottom: 2em; font-family: sans-serif; font-weight: 800; color: #0f172a; }
-        h2 { font-size: 2em; margin-top: 2em; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.4em; color: #0f172a; }
-        h3 { font-size: 1.4em; margin-top: 1.5em; color: #1e293b; }
-        p { margin-bottom: 1.25em; text-align: justify; text-justify: inter-word; }
-        blockquote { border-left: 4px solid #10b981; padding-left: 1.25rem; color: #475569; font-style: italic; margin: 1.5rem 0; }
-        pre { background: #f1f5f9; padding: 1.25rem; border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 0.9em; margin: 1.5rem 0; }
+        @page {
+          ${sizeRule}
+          ${marginRule}
+        }
+        body { 
+          font-family: ${fontCss}; 
+          font-size: ${config.fontSize}px;
+          line-height: ${config.lineHeight}; 
+          color: #1e293b; 
+          background: #ffffff;
+        }
+        h1 { 
+          text-align: center; 
+          font-size: 2.75em; 
+          margin-bottom: 2em; 
+          font-family: 'Playfair Display', Georgia, serif; 
+          font-weight: 800; 
+          color: #0f172a; 
+        }
+        h2 { 
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 2em; 
+          margin-top: 1.5em; 
+          border-bottom: 2px solid #e2e8f0; 
+          padding-bottom: 0.4em; 
+          color: #0f172a; 
+        }
+        h3 { 
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 1.4em; 
+          margin-top: 1.5em; 
+          color: #1e293b; 
+        }
+        p { 
+          margin-bottom: 1.25em; 
+          text-align: ${config.textAlignment === "justify" ? "justify" : "left"}; 
+          text-justify: inter-word; 
+        }
+        blockquote { 
+          border-left: 4px solid #7c3aed; 
+          padding-left: 1.25rem; 
+          color: #4b5563; 
+          font-style: italic; 
+          margin: 1.5rem 0; 
+        }
+        pre { 
+          background: #f3f4f6; 
+          padding: 1.25rem; 
+          border-radius: 8px; 
+          overflow-x: auto; 
+          font-family: monospace; 
+          font-size: 0.9em; 
+          margin: 1.5rem 0; 
+        }
         ul, ol { padding-left: 1.75rem; margin-bottom: 1.25rem; }
         li { margin-bottom: 0.5rem; }
         .page-break { page-break-before: always; }
+
+        /* Running header/footer styles */
+        .print-header {
+          display: ${config.headerStyle === "none" ? "none" : "flex"};
+          justify-content: space-between;
+          font-size: 9px;
+          color: #64748b;
+          border-bottom: 1px solid #e2e8f0;
+          padding-bottom: 6px;
+          margin-bottom: 24px;
+          text-transform: uppercase;
+          font-family: 'Inter', sans-serif;
+          font-weight: 600;
+          letter-spacing: 0.05em;
+        }
+        .print-footer {
+          display: ${config.footerStyle === "none" ? "none" : "block"};
+          text-align: ${config.footerStyle === "page-right" ? "right" : "center"};
+          font-size: 9px;
+          color: #64748b;
+          border-top: 1px solid #e2e8f0;
+          padding-top: 6px;
+          margin-top: 24px;
+          font-family: monospace;
+        }
+
+        /* Cover styles */
+        .print-cover {
+          height: 95vh;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          text-align: center;
+          background: ${coverConfig?.gradient || "linear-gradient(135deg, #1f2937, #111827)"};
+          color: #ffffff;
+          padding: 3in 1.5in 1.5in 1.5in;
+          page-break-after: always;
+          box-sizing: border-box;
+        }
+        .print-cover-title {
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 36px;
+          font-weight: 700;
+          line-height: 1.2;
+          color: #ffffff;
+          margin: 0;
+        }
+        .print-cover-subtitle {
+          font-family: 'Inter', sans-serif;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+          opacity: 0.8;
+          margin-top: 12px;
+          margin-bottom: 12px;
+        }
+        .print-cover-author {
+          font-family: 'Lora', Georgia, serif;
+          font-size: 18px;
+          font-style: italic;
+          opacity: 0.9;
+        }
+        .print-cover-footer {
+          font-family: 'Inter', sans-serif;
+          font-size: 9px;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          opacity: 0.5;
+        }
+
+        /* TOC styles */
+        .print-toc {
+          page-break-after: always;
+          padding: 1in 0.5in;
+        }
+        .print-toc-title {
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 24px;
+          font-weight: 700;
+          text-align: center;
+          margin-bottom: 2.5em;
+          border-bottom: 1px solid #cbd5e1;
+          padding-bottom: 0.5em;
+        }
+        .print-toc-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 14px;
+          font-size: 13px;
+          color: #334155;
+        }
+        .print-toc-dots {
+          flex: 1;
+          border-bottom: 1px dashed #94a3b8;
+          margin: 0 10px;
+          height: 10px;
+        }
       </style></head><body>`;
-      
-      fullHTML += `<h1>${book.title}</h1>`;
-      if (book.description) {
-        fullHTML += `<div style="text-align: center; font-style: italic; color: #64748b; margin-bottom: 4em;">${book.description}</div>`;
+
+      // 1. Cover Page
+      if (config.includeCover) {
+        fullHTML += `
+          <div class="print-cover">
+            <div>
+              <div class="print-cover-subtitle">${coverConfig.subtitle || "EBOOK SPECIFICATION"}</div>
+              <h1 class="print-cover-title">${coverConfig.title || book.title}</h1>
+            </div>
+            <div>
+              <div class="print-cover-author">by ${user?.username || "Writer"}</div>
+            </div>
+            <div class="print-cover-footer">Published with eBookAI</div>
+          </div>
+        `;
       }
-      
+
+      // 2. Table of Contents
+      if (config.includeTOC) {
+        fullHTML += `
+          <div class="print-toc">
+            <h2 class="print-toc-title">Table of Contents</h2>
+            <div style="margin-top: 20px;">
+              ${book.chapters.map((ch, idx) => `
+                <div class="print-toc-item">
+                  <span>Chapter ${idx + 1}: ${ch.title}</span>
+                  <span class="print-toc-dots"></span>
+                  <span style="font-family: monospace;">${idx * 3 + 4}</span>
+                </div>
+              `).join("")}
+            </div>
+          </div>
+        `;
+      }
+
+      // 3. Chapters
       book.chapters.forEach((ch, idx) => {
-        fullHTML += `<div class="${idx > 0 ? "page-break" : ""}">`;
+        const breakClass = (config.chapterPageBreaks && (idx > 0 || config.includeCover || config.includeTOC)) ? "page-break" : "";
+        fullHTML += `<div class="${breakClass}" style="margin-bottom: 1.5in;">`;
+        
+        // Running Header
+        if (config.headerStyle === "title-chapter") {
+          fullHTML += `
+            <div class="print-header">
+              <span>${book.title}</span>
+              <span>Chapter ${idx + 1}: ${ch.title}</span>
+            </div>
+          `;
+        }
+        
         fullHTML += `<h2>${ch.title}</h2>`;
-        fullHTML += `<div>${ch.body}</div>`;
+        fullHTML += `<div style="text-align: ${config.textAlignment === "justify" ? "justify" : "left"};">${ch.body}</div>`;
+        
+        // Running Footer
+        if (config.footerStyle !== "none") {
+          fullHTML += `
+            <div class="print-footer">
+              Page ${idx + 1 + (config.includeTOC ? 3 : 0) + (config.includeCover ? 1 : 0)}
+            </div>
+          `;
+        }
+
         fullHTML += `</div>`;
       });
+
       fullHTML += `</body></html>`;
 
       printWindow.document.write(fullHTML);
@@ -886,8 +1161,23 @@ const EditorPage = () => {
       }
       toast.success(format === "pdf" ? "PDF print overlay opened!" : "HTML Document exported!");
     } else if (format === "docx") {
-      const docHtml = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset="utf-8"><title>${book.title}</title></head><body><h1>${book.title}</h1>` +
-        book.chapters.map(ch => `<h2>${ch.title}</h2><div>${ch.body}</div>`).join("") + "</body></html>";
+      const docHtml = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+        <head>
+          <meta charset="utf-8">
+          <title>${book.title}</title>
+          <style>
+            body { 
+              font-family: ${fontCss}; 
+              font-size: ${config.fontSize}px; 
+              line-height: ${config.lineHeight};
+            }
+          </style>
+        </head>
+        <body>
+          <h1>${book.title}</h1>
+          ${book.chapters.map(ch => `<h2>${ch.title}</h2><div style="text-align: ${config.textAlignment === "justify" ? "justify" : "left"};">${ch.body}</div>`).join("")}
+        </body>
+      </html>`;
       
       const blob = new Blob([docHtml], { type: "application/msword" });
       const url = URL.createObjectURL(blob);
@@ -897,10 +1187,23 @@ const EditorPage = () => {
       link.click();
       toast.success("DOCX exported!");
     } else if (format === "epub") {
-      const docHtml = `<html><head><meta charset="utf-8"><title>${book.title}</title></head><body>` +
-        `<h1>${book.title}</h1>` +
-        book.chapters.map(ch => `<h3>${ch.title}</h3><div>${ch.body}</div>`).join("<hr/>") +
-        "</body></html>";
+      const docHtml = `<html>
+        <head>
+          <meta charset="utf-8">
+          <title>${book.title}</title>
+          <style>
+            body { 
+              font-family: ${fontCss}; 
+              font-size: ${config.fontSize}px; 
+              line-height: ${config.lineHeight};
+            }
+          </style>
+        </head>
+        <body>
+          <h1>${book.title}</h1>
+          ${book.chapters.map(ch => `<h3>${ch.title}</h3><div style="text-align: ${config.textAlignment === "justify" ? "justify" : "left"};">${ch.body}</div>`).join("<hr/>")}
+        </body>
+      </html>`;
       
       const blob = new Blob([docHtml], { type: "application/epub+zip" });
       const url = URL.createObjectURL(blob);
@@ -1075,47 +1378,13 @@ const EditorPage = () => {
                 Draft AI
               </button>
 
-              {/* Export Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setExportDropdownOpen(!exportDropdownOpen)}
-                  className="h-[34px] px-3.5 border border-border-primary hover:border-text-primary text-text-secondary hover:text-text-primary active:scale-[0.98] text-[10px] font-bold tracking-wider rounded-lg transition-all flex items-center gap-1 uppercase cursor-pointer bg-transparent"
-                >
-                  Export
-                  <svg className="w-3.5 h-3.5 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-
-                {exportDropdownOpen && (
-                  <div className="absolute right-0 mt-1.5 w-44 bg-bg-secondary border border-border-primary rounded-xl shadow-xl z-50 py-1.5 animate-fadeIn transition-colors duration-250">
-                    <button
-                      onClick={() => handleExport("pdf")}
-                      className="w-full text-left px-4 py-2 text-xs text-text-primary hover:bg-bg-tertiary transition-colors flex items-center gap-2 cursor-pointer font-medium bg-transparent border-none"
-                    >
-                      📄 Export as PDF
-                    </button>
-                    <button
-                      onClick={() => handleExport("markdown")}
-                      className="w-full text-left px-4 py-2 text-xs text-text-primary hover:bg-bg-tertiary transition-colors flex items-center gap-2 cursor-pointer font-medium bg-transparent border-none"
-                    >
-                      📝 Export as Markdown
-                    </button>
-                    <button
-                      onClick={() => handleExport("docx")}
-                      className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2 cursor-pointer font-medium"
-                    >
-                      🟦 Export as MS Word
-                    </button>
-                    <button
-                      onClick={() => handleExport("epub")}
-                      className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2 cursor-pointer font-medium"
-                    >
-                      📕 Export as EPUB
-                    </button>
-                  </div>
-                )}
-              </div>
+              {/* Export Settings */}
+              <button
+                onClick={() => setIsExportModalOpen(true)}
+                className="h-[34px] px-3.5 border border-border-primary hover:border-text-primary text-text-secondary hover:text-text-primary active:scale-[0.98] text-[10px] font-bold tracking-wider rounded-lg transition-all flex items-center gap-1.5 uppercase cursor-pointer bg-transparent"
+              >
+                ⚙️ Export Settings
+              </button>
 
               {/* Manual Save */}
               <button
@@ -1947,6 +2216,14 @@ const EditorPage = () => {
           </div>
         </div>
       )}
+
+      <ExportSettingsModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        exportConfig={book?.exportConfig}
+        onSave={handleSaveExportConfig}
+        onExport={handleExport}
+      />
 
     </div>
   );

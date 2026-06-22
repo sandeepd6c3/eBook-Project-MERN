@@ -66,7 +66,7 @@ const getBookById = async (req, res) => {
 // @route   PUT /api/books/:id
 // @access  Private
 const updateBook = async (req, res) => {
-    const { title, description, coverImage, chapters, isPublished } = req.body;
+    const { title, description, coverImage, chapters, isPublished, exportConfig } = req.body;
 
     try {
         const book = await Book.findById(req.params.id);
@@ -86,6 +86,7 @@ const updateBook = async (req, res) => {
         if (coverImage !== undefined) book.coverImage = coverImage;
         if (chapters !== undefined) book.chapters = chapters;
         if (isPublished !== undefined) book.isPublished = isPublished;
+        if (exportConfig !== undefined) book.exportConfig = exportConfig;
 
         const updatedBook = await book.save();
         res.json(updatedBook);
