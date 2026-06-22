@@ -5,6 +5,7 @@ import Button from "../components/ui/Button";
 import ThemeSwitcher from "../components/ui/ThemeSwitcher";
 import toast from "react-hot-toast";
 import ExportSettingsModal from "../components/ui/ExportSettingsModal";
+import Modal from "../components/ui/Modal";
 
 const API_BOOKS = "http://localhost:5000/api/books";
 const API_AI = "http://localhost:5000/api/ai";
@@ -147,6 +148,7 @@ const EditorPage = () => {
   // AI Cover Builder parameters
   const [isCoverModalOpen, setIsCoverModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [coverConfig, setCoverConfig] = useState({
     gradient: "linear-gradient(135deg, #1e3a8a, #3b82f6)",
     style: "modern",
@@ -418,6 +420,11 @@ const EditorPage = () => {
 
   const handleGenerateOutline = async () => {
     if (!book) return;
+    if ((user?.subscriptionTier || 'free') === 'free') {
+      setIsOutlineModalOpen(false);
+      setIsUpgradeModalOpen(true);
+      return;
+    }
     setIsOutlineModalOpen(false);
     setGenerationType("outline");
     setGenerationStep(0);
@@ -479,6 +486,10 @@ const EditorPage = () => {
 
   const handleDraftWithAI = async () => {
     if (activeChapterIndex === -1 || !book) return;
+    if ((user?.subscriptionTier || 'free') === 'free') {
+      setIsUpgradeModalOpen(true);
+      return;
+    }
 
     const activeCh = book.chapters[activeChapterIndex];
     setAiDrafting(true);
@@ -679,6 +690,10 @@ const EditorPage = () => {
   // AI Copyedit Actions (rewrite, expand, shorten, grammar, tone)
   const handleAIExtension = async (action, toneVal = null) => {
     if (activeChapterIndex === -1 || !book) return;
+    if ((user?.subscriptionTier || 'free') === 'free') {
+      setIsUpgradeModalOpen(true);
+      return;
+    }
 
     const targetText = selectedText || chapterBody;
     if (!targetText.replace(/<[^>]*>/g, "").trim()) {
@@ -728,6 +743,10 @@ const EditorPage = () => {
 
   // AI Chat Submission
   const handleSendAIChat = async (customPrompt = null) => {
+    if ((user?.subscriptionTier || 'free') === 'free') {
+      setIsUpgradeModalOpen(true);
+      return;
+    }
     const query = customPrompt || aiChatInput;
     if (!query.trim()) return;
 
@@ -2224,6 +2243,33 @@ const EditorPage = () => {
         onSave={handleSaveExportConfig}
         onExport={handleExport}
       />
+
+      <Modal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+        title="Unlock AI Writing ✨"
+      >
+        <div className="flex flex-col gap-4 text-left">
+          <p className="text-text-secondary text-xs sm:text-sm font-medium leading-relaxed">
+            Upgrade to <strong className="text-text-primary">Pro Plan</strong> to unlock powerful AI outline generation, AI chapter drafting, and the interactive writing assistant.
+          </p>
+          <div className="flex items-center gap-3 mt-4">
+            <button
+              type="button"
+              onClick={() => setIsUpgradeModalOpen(false)}
+              className="flex-1 h-[46px] border border-border-primary hover:border-text-primary text-text-secondary hover:text-text-primary bg-bg-primary text-[10px] font-bold tracking-wider rounded-xl transition-all uppercase cursor-pointer"
+            >
+              Cancel
+            </button>
+            <Link
+              to="/pricing"
+              className="flex-1 h-[46px] bg-[#8B5CF6] hover:bg-[#7c3aed] text-white text-[10px] font-bold tracking-wider rounded-xl transition-all uppercase flex items-center justify-center cursor-pointer shadow-md shadow-[#8B5CF6]/10"
+            >
+              Upgrade to Pro
+            </Link>
+          </div>
+        </div>
+      </Modal>
 
     </div>
   );

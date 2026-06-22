@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from "react";
+import { useAuth } from "../../context/AuthContext";
+import Modal from "./Modal";
+import { Link } from "react-router-dom";
 import Button from "./Button";
 
 const ExportSettingsModal = ({ isOpen, onClose, exportConfig, onSave, onExport }) => {
+  const { user } = useAuth();
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [upgradeMessage, setUpgradeMessage] = useState("");
+  const [targetTier, setTargetTier] = useState("pro"); // "pro" | "premium"
+
   const [config, setConfig] = useState({
     pageSize: "letter",
     marginStyle: "normal",
@@ -29,6 +37,30 @@ const ExportSettingsModal = ({ isOpen, onClose, exportConfig, onSave, onExport }
   if (!isOpen) return null;
 
   const handleChange = (key, value) => {
+    const tier = user?.subscriptionTier || "free";
+    const isPremium = ["premium", "lifetime"].includes(tier);
+
+    if (key === "pageSize" && ["a5", "pocket"].includes(value) && !isPremium) {
+      setUpgradeMessage("Upgrade to Premium to unlock pocket book formats, A5 digests, and professional publication layouts.");
+      setTargetTier("premium");
+      setIsUpgradeModalOpen(true);
+      return;
+    }
+
+    if (key === "marginStyle" && value === "custom" && !isPremium) {
+      setUpgradeMessage("Upgrade to Premium to unlock custom margins, premium layout styles, and advanced templates.");
+      setTargetTier("premium");
+      setIsUpgradeModalOpen(true);
+      return;
+    }
+
+    if (key === "fontFamily" && ["Playfair Display", "Outfit", "Inter"].includes(value) && !isPremium) {
+      setUpgradeMessage("Upgrade to Premium to unlock editorial typography including Outfit, Inter, and Playfair Display.");
+      setTargetTier("premium");
+      setIsUpgradeModalOpen(true);
+      return;
+    }
+
     setConfig((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -45,6 +77,17 @@ const ExportSettingsModal = ({ isOpen, onClose, exportConfig, onSave, onExport }
 
   const handleSave = () => {
     onSave(config);
+  };
+
+  const handleExportClick = (format) => {
+    const tier = user?.subscriptionTier || "free";
+    if (format !== "pdf" && tier === "free") {
+      setUpgradeMessage("Upgrade to Pro to export your eBooks as EPUB, DOCX, and Markdown files.");
+      setTargetTier("pro");
+      setIsUpgradeModalOpen(true);
+      return;
+    }
+    onExport(format, config);
   };
 
   // Maps for font styling in preview
@@ -124,8 +167,8 @@ const ExportSettingsModal = ({ isOpen, onClose, exportConfig, onSave, onExport }
                   >
                     <option value="letter">Letter (8.5&quot; x 11&quot;)</option>
                     <option value="a4">A4 Standard</option>
-                    <option value="a5">A5 Digest</option>
-                    <option value="pocket">Pocket Book (5&quot; x 8&quot;)</option>
+                    <option value="a5">🔒 A5 Digest (Premium)</option>
+                    <option value="pocket">🔒 Pocket Book (5&quot; x 8&quot;) (Premium)</option>
                   </select>
                 </div>
                 <div className="flex flex-col gap-1">
@@ -138,7 +181,7 @@ const ExportSettingsModal = ({ isOpen, onClose, exportConfig, onSave, onExport }
                     <option value="normal">Normal (1&quot;)</option>
                     <option value="compact">Compact (0.5&quot;)</option>
                     <option value="wide">Wide (1.5&quot;)</option>
-                    <option value="custom">Custom Margins</option>
+                    <option value="custom">🔒 Custom Margins (Premium)</option>
                   </select>
                 </div>
               </div>
@@ -184,9 +227,9 @@ const ExportSettingsModal = ({ isOpen, onClose, exportConfig, onSave, onExport }
                   >
                     <option value="Lora">Lora (Serif Classic)</option>
                     <option value="Georgia">Georgia (Serif Modern)</option>
-                    <option value="Playfair Display">Playfair (Serif Editorial)</option>
-                    <option value="Outfit">Outfit (Sans Elegant)</option>
-                    <option value="Inter">Inter (Sans Clean)</option>
+                    <option value="Playfair Display">🔒 Playfair Display (Premium)</option>
+                    <option value="Outfit">🔒 Outfit (Premium)</option>
+                    <option value="Inter">🔒 Inter (Premium)</option>
                   </select>
                 </div>
                 <div className="flex flex-col gap-1">
@@ -492,28 +535,28 @@ const ExportSettingsModal = ({ isOpen, onClose, exportConfig, onSave, onExport }
           
           <div className="flex items-center gap-2 flex-wrap">
             <button
-              onClick={() => onExport("pdf", config)}
+              onClick={() => handleExportClick("pdf")}
               className="px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer border-none shadow-xs"
             >
               📄 PDF
             </button>
             <button
-              onClick={() => onExport("epub", config)}
+              onClick={() => handleExportClick("epub")}
               className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer border-none shadow-xs"
             >
-              📕 EPUB
+              {user?.subscriptionTier === "free" ? "🔒 EPUB" : "📕 EPUB"}
             </button>
             <button
-              onClick={() => onExport("docx", config)}
+              onClick={() => handleExportClick("docx")}
               className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer border-none shadow-xs"
             >
-              🟦 DOCX
+              {user?.subscriptionTier === "free" ? "🔒 DOCX" : "🟦 DOCX"}
             </button>
             <button
-              onClick={() => onExport("markdown", config)}
+              onClick={() => handleExportClick("markdown")}
               className="px-3.5 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer border-none shadow-xs"
             >
-              📝 Markdown
+              {user?.subscriptionTier === "free" ? "🔒 Markdown" : "📝 Markdown"}
             </button>
             <div className="w-px h-5 bg-border-primary mx-1"></div>
             <Button
@@ -527,6 +570,34 @@ const ExportSettingsModal = ({ isOpen, onClose, exportConfig, onSave, onExport }
         </div>
 
       </div>
+
+      <Modal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+        title={targetTier === "premium" ? "Unlock Premium Styling ✨" : "Unlock Pro Export Formats ⚡"}
+      >
+        <div className="flex flex-col gap-4 text-left">
+          <p className="text-text-secondary text-xs sm:text-sm font-medium leading-relaxed">
+            {upgradeMessage}
+          </p>
+          <div className="flex items-center gap-3 mt-4">
+            <button
+              type="button"
+              onClick={() => setIsUpgradeModalOpen(false)}
+              className="flex-1 h-[46px] border border-border-primary hover:border-text-primary text-text-secondary hover:text-text-primary bg-bg-primary text-[10px] font-bold tracking-wider rounded-xl transition-all uppercase cursor-pointer"
+            >
+              Cancel
+            </button>
+            <Link
+              to="/pricing"
+              className="flex-1 h-[46px] bg-[#8B5CF6] hover:bg-[#7c3aed] text-white text-[10px] font-bold tracking-wider rounded-xl transition-all uppercase flex items-center justify-center cursor-pointer shadow-md shadow-[#8B5CF6]/10"
+            >
+              Upgrade to {targetTier === "premium" ? "Premium" : "Pro"}
+            </Link>
+          </div>
+        </div>
+      </Modal>
+
     </div>
   );
 };

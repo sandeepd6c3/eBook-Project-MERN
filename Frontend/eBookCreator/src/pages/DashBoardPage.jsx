@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import InputField from "../components/ui/InputField";
 import TextAreaField from "../components/ui/TextAreaField";
@@ -14,6 +14,7 @@ const API_BASE = "http://localhost:5000/api/books";
 const DashboardPage = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // State
   const [books, setBooks] = useState([]);
@@ -25,6 +26,7 @@ const DashboardPage = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedBook, setSelectedBook] = useState(null);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
   // Create Form State
   const [formValues, setFormValues] = useState({
@@ -58,6 +60,24 @@ const DashboardPage = () => {
   useEffect(() => {
     fetchBooks();
   }, []);
+
+  // Open creation modal if requested via route state
+  useEffect(() => {
+    if (location.state?.openCreateModal) {
+      handleCreateClick();
+      // Clean up state to prevent reopening on reload
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
+
+  const handleCreateClick = () => {
+    const tier = user?.subscriptionTier || "free";
+    if (tier === "free" && books.length >= 2) {
+      setIsUpgradeModalOpen(true);
+    } else {
+      setIsCreateOpen(true);
+    }
+  };
 
   const fetchBooks = async () => {
     setLoading(true);
@@ -326,6 +346,26 @@ const DashboardPage = () => {
               Hello, <strong className="text-text-primary">{user?.username || "Sandeep"}</strong>
             </span>
             <Link
+              to="/pricing"
+              className={`text-[9px] font-extrabold uppercase tracking-wider px-2.5 py-1.5 rounded-lg border cursor-pointer transition-all mr-1 ${
+                user?.subscriptionTier === "pro"
+                  ? "bg-amber-500/10 text-amber-600 border-amber-500/25 hover:bg-amber-500/20"
+                  : user?.subscriptionTier === "premium"
+                    ? "bg-[#8B5CF6]/10 text-[#8B5CF6] border-[#8B5CF6]/25 hover:bg-[#8B5CF6]/20"
+                    : user?.subscriptionTier === "lifetime"
+                      ? "bg-amber-500/15 text-amber-500 border-amber-500/30 hover:bg-amber-500/25"
+                      : "bg-bg-primary text-text-muted border-border-primary hover:bg-bg-tertiary"
+              }`}
+            >
+              {user?.subscriptionTier === "pro"
+                ? "⭐ Pro Plan"
+                : user?.subscriptionTier === "premium"
+                  ? "💎 Premium"
+                  : user?.subscriptionTier === "lifetime"
+                    ? "💎 Lifetime"
+                    : "Free Plan"}
+            </Link>
+            <Link
               to="/discover"
               className="text-[10px] font-bold uppercase tracking-wider text-text-secondary hover:text-text-primary transition-colors border border-border-primary hover:border-text-primary px-3 py-1.5 rounded-lg cursor-pointer mr-1"
             >
@@ -455,7 +495,7 @@ const DashboardPage = () => {
           </div>
 
           <Button
-            onClick={() => setIsCreateOpen(true)}
+            onClick={handleCreateClick}
             variant="primary"
             className="w-full lg:w-auto h-[42px] bg-emerald-700 hover:bg-emerald-600 border-none text-[10px] font-bold tracking-wider rounded-xl transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-sm px-6 py-0 uppercase"
           >
@@ -496,7 +536,7 @@ const DashboardPage = () => {
               Unlock the power of AI to outline and draft complete eBooks from a single prompt idea.
             </p>
             <Button
-              onClick={() => setIsCreateOpen(true)}
+              onClick={handleCreateClick}
               variant="primary"
               className="h-[46px] bg-emerald-700 hover:bg-emerald-600 border-none text-[10px] font-bold tracking-wider rounded-xl transition-all duration-300 px-8 uppercase"
             >
@@ -773,6 +813,34 @@ const DashboardPage = () => {
                 "Delete eBook"
               )}
             </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Upgrade Limit Warning Modal */}
+      <Modal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+        title="Limit Reached ⚡"
+      >
+        <div className="flex flex-col gap-4 text-left">
+          <p className="text-text-secondary text-xs sm:text-sm font-medium leading-relaxed">
+            You've reached your free plan limit of <strong className="text-text-primary">2 eBooks</strong>. Upgrade to Pro to unlock unlimited publications, AI assistant tools, and EPUB exports.
+          </p>
+          <div className="flex items-center gap-3 mt-4">
+            <button
+              type="button"
+              onClick={() => setIsUpgradeModalOpen(false)}
+              className="flex-1 h-[46px] border border-border-primary hover:border-text-primary text-text-secondary hover:text-text-primary bg-bg-primary text-[10px] font-bold tracking-wider rounded-xl transition-all uppercase cursor-pointer"
+            >
+              Cancel
+            </button>
+            <Link
+              to="/pricing"
+              className="flex-1 h-[46px] bg-[#8B5CF6] hover:bg-[#7c3aed] text-white text-[10px] font-bold tracking-wider rounded-xl transition-all uppercase flex items-center justify-center cursor-pointer shadow-md shadow-[#8B5CF6]/10"
+            >
+              Upgrade to Pro
+            </Link>
           </div>
         </div>
       </Modal>

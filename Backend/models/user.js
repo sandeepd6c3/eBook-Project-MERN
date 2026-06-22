@@ -50,6 +50,31 @@ const userSchema = new mongoose.Schema(
             type: String,
             default: "light",
         },
+        subscriptionTier: {
+            type: String,
+            enum: ["free", "pro", "premium", "lifetime"],
+            default: "free",
+        },
+        stripeCustomerId: {
+            type: String,
+            default: "",
+        },
+        stripeSubscriptionId: {
+            type: String,
+            default: "",
+        },
+        subscriptionStatus: {
+            type: String,
+            default: "",
+        },
+        billingCycle: {
+            type: String,
+            default: "",
+        },
+        subscriptionExpiresAt: {
+            type: Date,
+            default: null,
+        },
     },
     {
         timestamps: true,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import ThemeSwitcher from "../components/ui/ThemeSwitcher";
@@ -39,14 +39,117 @@ const BookShelfCover = ({ config, title, className = "" }) => {
   );
 };
 
+// Instagram-style Library Square Card
+const LibraryGridCard = ({ book, onPreview, onEdit, onDelete, getCoverConfig }) => {
+  const coverConfig = getCoverConfig(book);
+  const isGradientClass = coverConfig?.gradient && (coverConfig.gradient.startsWith("bg-") || coverConfig.gradient.includes("from-"));
+
+  // Retrieve category from serialized description
+  const getCategory = (b) => {
+    if (!b.description) return "eBook";
+    const match = b.description.match(/Category:\s*(.+)/);
+    return match ? match[1] : "eBook";
+  };
+
+  return (
+    <div className="relative aspect-square rounded-[16px] overflow-hidden border border-border-primary shadow-lg group select-none bg-bg-secondary transition-colors duration-250">
+      {/* Background image or gradient filling the square card */}
+      <div
+        className="absolute inset-0 transition-transform duration-500 ease-out group-hover:scale-110"
+        style={{
+          backgroundImage: coverConfig?.imageUrl ? `url(${coverConfig.imageUrl})` : undefined,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          background: coverConfig?.imageUrl ? undefined : (isGradientClass ? undefined : (coverConfig?.gradient || "linear-gradient(135deg, #1e3a8a, #3b82f6)")),
+        }}
+      >
+        {/* Spine crease shadow */}
+        <div className="absolute top-0 left-0 bottom-0 w-2 bg-gradient-to-r from-black/35 via-white/5 to-transparent z-10"></div>
+        {/* Shadow Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/25 z-0"></div>
+      </div>
+
+      {/* Card Contents (Visible at normal state) */}
+      <div className="absolute inset-0 p-4 flex flex-col justify-between z-10">
+        {/* Top Tag and Badge */}
+        <div className="flex justify-between items-start gap-2">
+          {/* Category Badge */}
+          <span className="bg-bg-primary/80 backdrop-blur-md text-text-primary border border-border-primary px-2 py-0.5 rounded-full font-sans text-[8px] uppercase font-bold tracking-wider truncate max-w-[70%]">
+            {getCategory(book)}
+          </span>
+          
+          {/* Status Tag */}
+          <span className={`px-2 py-0.5 rounded-full font-mono text-[8px] uppercase font-bold tracking-wide border ${
+            book.isPublished 
+              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" 
+              : "bg-bg-primary/80 text-text-muted border-border-primary"
+          }`}>
+            {book.isPublished ? "Published" : "Draft"}
+          </span>
+        </div>
+
+        {/* Bottom Title Overlay */}
+        <div>
+          <h4 className="font-sans font-bold text-xs sm:text-sm text-white leading-tight line-clamp-2 drop-shadow-md">
+            {book.title}
+          </h4>
+        </div>
+      </div>
+
+      {/* Hover Action Overlay */}
+      <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20 flex flex-col items-center justify-center gap-2">
+        <div className="flex items-center gap-2">
+          {/* Preview */}
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              onPreview(book._id);
+            }}
+            className="w-9 h-9 rounded-full bg-bg-tertiary hover:bg-accent-primary text-text-primary hover:text-white flex items-center justify-center transition-all hover:scale-110 cursor-pointer shadow-md text-sm border border-border-primary"
+            title="Preview eBook"
+          >
+            👁
+          </button>
+          
+          {/* Edit */}
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              onEdit(book._id);
+            }}
+            className="w-9 h-9 rounded-full bg-bg-tertiary hover:bg-accent-primary text-text-primary hover:text-white flex items-center justify-center transition-all hover:scale-110 cursor-pointer shadow-md text-sm border border-border-primary"
+            title="Edit eBook"
+          >
+            ✏️
+          </button>
+
+          {/* Delete */}
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              onDelete(book._id, e);
+            }}
+            className="w-9 h-9 rounded-full bg-bg-tertiary hover:bg-rose-500 text-text-primary hover:text-white flex items-center justify-center transition-all hover:scale-110 cursor-pointer shadow-md text-sm border border-border-primary"
+            title="Delete eBook"
+          >
+            🗑️
+          </button>
+        </div>
+        <span className="text-[8px] uppercase tracking-widest font-extrabold text-zinc-400">Actions</span>
+      </div>
+    </div>
+  );
+};
+
 const ProfilePage = () => {
   const { user, setUser, logout } = useAuth();
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("Overview");
 
   // Edit profile states
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editUsername, setEditUsername] = useState("");
   const [editBio, setEditBio] = useState("");
   const [editLocation, setEditLocation] = useState("");
@@ -86,7 +189,32 @@ const ProfilePage = () => {
     navigate("/login");
   };
 
-  // Profile Avatar Upload handler
+  const handleDeleteBook = async (bookId, e) => {
+    if (e) e.preventDefault();
+    if (!window.confirm("Are you sure you want to delete this eBook? This action is permanent and will delete all pages/chapters.")) return;
+
+    const token = localStorage.getItem("token");
+    const toastId = toast.loading("Deleting eBook...");
+    try {
+      const response = await fetch(`http://localhost:5000/api/books/${bookId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete eBook");
+      }
+
+      toast.success("eBook deleted successfully!", { id: toastId });
+      setBooks((prev) => prev.filter((b) => b._id !== bookId));
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || "Could not delete eBook.", { id: toastId });
+    }
+  };
+
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -125,7 +253,6 @@ const ProfilePage = () => {
     }
   };
 
-  // Profile Save handler
   const handleSaveProfile = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem("token");
@@ -148,7 +275,6 @@ const ProfilePage = () => {
         const updated = await response.json();
         setUser(updated);
         toast.success("Profile updated successfully!");
-        setIsEditModalOpen(false);
       } else {
         const errData = await response.json();
         toast.error(errData.message || "Failed to update profile");
@@ -156,28 +282,6 @@ const ProfilePage = () => {
     } catch (err) {
       console.error("Profile edit error:", err);
       toast.error("Could not save profile details.");
-    }
-  };
-
-  // Preference Theme update
-  const handleThemePreference = async (newTheme) => {
-    const token = localStorage.getItem("token");
-    try {
-      const response = await fetch("http://localhost:5000/api/auth/profile", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ preferredTheme: newTheme }),
-      });
-      if (response.ok) {
-        const updated = await response.json();
-        setUser(updated);
-        toast.success(`Theme preference set to ${newTheme}!`);
-      }
-    } catch (err) {
-      console.error(err);
     }
   };
 
@@ -205,7 +309,7 @@ const ProfilePage = () => {
   };
 
   const getProfileCompletion = () => {
-    let score = 40; // Default base for user credentials
+    let score = 40; // Base details
     if (user?.bio && user.bio.length > 10) score += 20;
     if (user?.avatar) score += 20;
     if (user?.location && user.location !== "Jaipur, India") score += 10;
@@ -213,7 +317,6 @@ const ProfilePage = () => {
     return Math.min(100, score);
   };
 
-  // Find book cover config helper
   const getCoverConfig = (book) => {
     let parsedConfig = {
       gradient: "linear-gradient(135deg, #1e3a8a, #3b82f6)",
@@ -221,6 +324,7 @@ const ProfilePage = () => {
       subtitle: "FIRST EDITION",
       imageUrl: "",
     };
+    if (!book) return parsedConfig;
     try {
       if (book.coverImage) {
         const parsed = JSON.parse(book.coverImage);
@@ -236,627 +340,574 @@ const ProfilePage = () => {
     return parsedConfig;
   };
 
-  // Get average rating of a book helper
   const getBookAvgRating = (bk) => {
     if (!bk?.reviews || bk.reviews.length === 0) return "0.0";
     const sum = bk.reviews.reduce((acc, r) => acc + r.rating, 0);
     return (sum / bk.reviews.length).toFixed(1);
   };
 
-  // Get most popular book based on reads count
   const getPopularBook = () => {
-    if (books.length === 0) {
-      return { title: "Introduction to Artificial Intelligence", reads: 0 };
-    }
+    if (books.length === 0) return null;
     const sorted = [...books].sort((a, b) => (b.reads || 0) - (a.reads || 0));
     return sorted[0];
   };
 
   const popularBook = getPopularBook();
-
-  // Total Reads across all books
-  const totalReads = books.reduce((acc, b) => acc + (b.reads || 0), 0);
-
-  // Average rating across all reviews of all books
-  const getAverageAuthorRating = () => {
-    let reviewCount = 0;
-    let ratingSum = 0;
-    books.forEach((b) => {
-      if (b.reviews) {
-        b.reviews.forEach((r) => {
-          ratingSum += r.rating;
-          reviewCount += 1;
-        });
-      }
-    });
-    return reviewCount > 0 ? (ratingSum / reviewCount).toFixed(1) : "0.0";
-  };
-
-  const avgAuthorRating = getAverageAuthorRating();
-  const totalReviewsCount = books.reduce((acc, b) => acc + (b.reviews?.length || 0), 0);
-
   const displayInitials = user?.username ? user.username.substring(0, 2).toUpperCase() : "W";
 
   return (
     <div className="min-h-screen bg-bg-primary text-text-primary font-sans flex flex-col justify-start transition-colors duration-250">
       
-      {/* Sticky Header */}
-      <header className="h-16 bg-bg-secondary border-b border-border-primary px-6 flex items-center justify-between shadow-xs sticky top-0 z-30 transition-colors duration-250">
-        <div className="flex items-center gap-3">
+      {/* Hidden File Input for Avatar Upload */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept="image/*"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+
+      {/* Top Header */}
+      <header className="h-16 bg-bg-secondary border-b border-border-primary px-6 flex items-center justify-between sticky top-0 z-30 shadow-xs transition-colors duration-250">
+        {/* Breadcrumbs */}
+        <div className="flex items-center gap-2 text-xs font-semibold">
           <Link
             to="/dashboard"
-            className="text-text-muted hover:text-text-primary transition-colors flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-widest"
+            className="text-text-muted hover:text-text-primary transition-colors uppercase tracking-widest font-mono"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
-            </svg>
             Library
           </Link>
-          <span className="text-border-primary">|</span>
-          <span className="text-text-primary text-xs font-semibold">
-            Writer Hub Profile
+          <span className="text-border-primary font-mono">&gt;</span>
+          <span className="text-text-primary uppercase tracking-widest font-mono">
+            Profile
           </span>
         </div>
 
-        <div className="flex items-center gap-4">
-          <ThemeSwitcher />
+        {/* Right Options */}
+        <div className="flex items-center gap-3">
+          <Link
+            to="/pricing"
+            className={`text-[9px] font-extrabold uppercase tracking-wider px-2.5 py-1.5 rounded-lg border cursor-pointer transition-all mr-1 ${
+              user?.subscriptionTier === "pro"
+                ? "bg-amber-500/10 text-amber-600 border-amber-500/25 hover:bg-amber-500/20"
+                : user?.subscriptionTier === "premium"
+                  ? "bg-[#8B5CF6]/10 text-[#8B5CF6] border-[#8B5CF6]/25 hover:bg-[#8B5CF6]/20"
+                  : user?.subscriptionTier === "lifetime"
+                    ? "bg-amber-500/15 text-amber-500 border-amber-500/30 hover:bg-amber-500/25"
+                    : "bg-bg-primary text-text-muted border-border-primary hover:bg-bg-tertiary"
+            }`}
+          >
+            {user?.subscriptionTier === "pro"
+              ? "⭐ Pro Plan"
+              : user?.subscriptionTier === "premium"
+                ? "💎 Premium"
+                : user?.subscriptionTier === "lifetime"
+                  ? "💎 Lifetime"
+                  : "Free Plan"}
+          </Link>
+          <button
+            onClick={() => setActiveTab("Settings")}
+            className="h-8 px-4 bg-transparent hover:bg-bg-secondary border border-border-primary hover:border-text-primary text-xs font-bold tracking-wider rounded-lg transition-all text-text-secondary hover:text-text-primary cursor-pointer"
+          >
+            Edit Profile
+          </button>
+          
+          <button
+            onClick={() => setActiveTab("Settings")}
+            className="w-8 h-8 rounded-lg border border-border-primary hover:border-text-primary flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-bg-secondary transition-all cursor-pointer"
+            title="Settings"
+          >
+            ⚙️
+          </button>
+
+          <button
+            onClick={() => {
+              toast("Writer Hub profile is fully synced.", { icon: "✓" });
+            }}
+            className="w-8 h-8 rounded-lg border border-border-primary hover:border-text-primary flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-bg-secondary transition-all cursor-pointer font-bold"
+            title="More Options"
+          >
+            •••
+          </button>
+
           <button
             onClick={handleLogoutClick}
-            className="h-[34px] px-4 bg-transparent border border-rose-200 hover:border-rose-500 hover:bg-rose-500/10 text-rose-600 hover:text-rose-700 active:scale-[0.98] text-[10px] font-bold tracking-wider rounded-lg transition-all uppercase cursor-pointer"
+            className="h-8 px-4 bg-transparent border border-red-500/30 hover:border-red-500 hover:bg-red-500/10 text-red-500 hover:text-red-700 active:scale-[0.98] text-[10px] font-bold tracking-wider rounded-lg transition-all uppercase cursor-pointer"
           >
             Sign Out
           </button>
         </div>
       </header>
 
-      {/* Main Container Canvas */}
-      <main className="flex-grow max-w-[1000px] w-full mx-auto p-6 sm:p-8 flex flex-col gap-8 animate-fadeIn">
+      {/* Main Container */}
+      <main className="flex-grow max-w-[1000px] w-full mx-auto p-6 sm:p-8 flex flex-col gap-6 animate-fadeIn">
         
-        {/* Dream Layout Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
-          {/* LEFT SIDE: Profile Information Card */}
-          <div className="lg:col-span-4 flex flex-col gap-6">
-            
-            {/* Card 1: Profile Card */}
-            <section className="bg-bg-secondary border border-border-primary rounded-[24px] p-6 shadow-xs flex flex-col items-center text-center relative overflow-hidden transition-colors duration-250">
-              <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500"></div>
-              
-              {/* Avatar section */}
-              <div className="relative mt-3 mb-4 group cursor-pointer" onClick={() => setIsEditModalOpen(true)}>
-                {user?.avatar ? (
-                  <img
-                    src={user.avatar}
-                    alt={user.username}
-                    className="h-24 w-24 rounded-full object-cover border-2 border-border-primary shadow-md group-hover:opacity-90 transition-opacity"
-                  />
-                ) : (
-                  <div className="h-24 w-24 rounded-full bg-gradient-to-tr from-indigo-650 via-violet-600 to-fuchsia-500 text-white flex items-center justify-center font-display font-light text-3xl tracking-wide shadow-lg shadow-indigo-500/10">
-                    {displayInitials}
-                  </div>
-                )}
-                <div className="absolute bottom-0 right-0 h-7 w-7 rounded-full bg-bg-tertiary border-2 border-border-primary text-text-primary flex items-center justify-center text-[10px] shadow-sm">
-                  ✏️
+        {/* Profile Header */}
+        <section className="bg-bg-secondary border border-border-primary rounded-xl p-6 shadow-xs flex flex-col md:flex-row gap-6 justify-between items-start md:items-center transition-colors duration-250">
+          <div className="flex gap-4 items-center">
+            {/* Circular Avatar with upload icon overlay */}
+            <div 
+              className="relative group cursor-pointer shrink-0" 
+              onClick={() => fileInputRef.current?.click()}
+              title="Upload Avatar"
+            >
+              {user?.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt={user.username}
+                  className="h-20 w-20 rounded-full object-cover border border-border-primary shadow-xs"
+                />
+              ) : (
+                <div className="h-20 w-20 rounded-full bg-gradient-to-tr from-accent-primary to-accent-ring text-white flex items-center justify-center font-display font-light text-2xl shadow-sm">
+                  {displayInitials}
                 </div>
+              )}
+              {/* Overlay */}
+              <div className="absolute inset-0 bg-black/55 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center text-white text-xs">
+                📷
               </div>
+            </div>
 
-              <h2 className="font-display font-light text-2xl text-text-primary leading-tight mb-1">
-                {user?.username || "Writer Profile"}
-              </h2>
-
-              <span className="text-[10px] text-text-muted font-medium flex items-center gap-1 mb-3">
-                📍 {user?.location || "Jaipur, India"}
-              </span>
-
-              {/* Bio description */}
-              <p className="text-text-secondary text-[11px] font-medium leading-relaxed max-w-[220px] mb-5">
+            <div>
+              {/* Full Name */}
+              <h1 className="text-xl sm:text-2xl font-bold uppercase tracking-wide text-text-primary">
+                {user?.username || "Sandeep Choudhary"}
+              </h1>
+              
+              {/* Bio & Details */}
+              <p className="text-xs text-text-secondary font-normal leading-relaxed max-w-[350px] mt-1">
                 {user?.bio || "AI & Data Science Student. Passionate about AI, Writing and Technology."}
               </p>
-
-              <div className="w-full h-px bg-border-primary my-4"></div>
-
-              {/* Stats table */}
-              <div className="w-full flex flex-col gap-2 text-left text-[11px] font-medium text-text-secondary">
-                <div className="flex justify-between items-center">
-                  <span>Member Since</span>
-                  <span className="text-text-primary font-semibold font-mono">{getMemberSince()}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Account Status</span>
-                  <span className="bg-emerald-50/10 text-emerald-500 border border-emerald-500/20 px-2 py-0.5 rounded-full font-mono text-[9px] uppercase font-extrabold">
-                    {user?.role === "admin" ? "Platform Admin" : "Premium Writer"}
-                  </span>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setIsEditModalOpen(true)}
-                className="w-full mt-5 h-9 bg-bg-primary hover:bg-bg-tertiary border border-border-primary text-text-secondary hover:text-text-primary active:scale-[0.98] rounded-xl text-[10px] font-bold tracking-wider uppercase transition-all cursor-pointer"
-              >
-                Edit Bio Details
-              </button>
-            </section>
-
-            {/* Card 2: Profile Completion Progress */}
-            <section className="bg-bg-secondary border border-border-primary rounded-[24px] p-6 shadow-xs transition-colors duration-250">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-[9px] font-extrabold uppercase tracking-widest text-text-muted">
-                  Profile Completion
-                </span>
-                <span className="font-mono text-xs font-bold text-accent-primary">
-                  {getProfileCompletion()}%
-                </span>
-              </div>
               
-              {/* Progress bar */}
-              <div className="w-full h-2 bg-bg-tertiary rounded-full overflow-hidden mb-4">
-                <div
-                  className="h-full bg-accent-primary rounded-full transition-all duration-500"
-                  style={{ width: `${getProfileCompletion()}%` }}
-                />
+              <div className="flex flex-wrap items-center gap-3 mt-3 text-[10px] text-text-muted font-semibold">
+                <span>📍 {user?.location || "Jaipur, India"}</span>
+                <span className="text-border-primary">•</span>
+                <span>📅 Member Since {getMemberSince()}</span>
               </div>
- 
-              <ul className="flex flex-col gap-2 text-[10px] font-bold uppercase tracking-wider text-text-secondary">
-                <li className="flex items-center gap-2">
-                  <span className={user?.avatar ? "text-emerald-500" : "text-text-muted"}>
-                    {user?.avatar ? "✓" : "○"}
-                  </span>
-                  <button onClick={() => setIsEditModalOpen(true)} className="hover:text-text-primary hover:underline cursor-pointer">
-                    Upload Custom Avatar
-                  </button>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className={user?.bio ? "text-emerald-500" : "text-text-muted"}>
-                    {user?.bio ? "✓" : "○"}
-                  </span>
-                  <button onClick={() => setIsEditModalOpen(true)} className="hover:text-text-primary hover:underline cursor-pointer">
-                    Refine Biography
-                  </button>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className={books.length > 0 ? "text-emerald-500" : "text-text-muted"}>
-                    {books.length > 0 ? "✓" : "○"}
-                  </span>
-                  <Link to="/dashboard" className="hover:text-text-primary hover:underline">
-                    Create First Draft
-                  </Link>
-                </li>
-              </ul>
-            </section>
-
-            {/* Card 3: Reader Preferences */}
-            <section className="bg-bg-secondary border border-border-primary rounded-[24px] p-6 shadow-xs flex flex-col gap-4 transition-colors duration-250">
-              <span className="text-[9px] font-extrabold uppercase tracking-widest text-text-muted">
-                Reader Preferences
-              </span>
- 
-              <div className="flex flex-col gap-2">
-                <span className="text-[10px] font-bold text-text-secondary uppercase tracking-wider pl-0.5">
-                  Favorite Reading Theme
-                </span>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { name: "light", icon: "🌞", label: "Light", color: "bg-bg-primary border-border-primary text-text-primary" },
-                    { name: "sepia", icon: "📜", label: "Sepia", color: "bg-[#F5EFE0] border-[#EADFCA] text-[#4E3629]" },
-                    { name: "dark", icon: "🌙", label: "Dark", color: "bg-[#18181B] border-zinc-850 text-zinc-300" },
-                  ].map((item) => (
-                    <button
-                      key={item.name}
-                      onClick={() => handleThemePreference(item.name)}
-                      className={`py-2 rounded-xl border text-[10px] font-semibold flex flex-col items-center gap-1 transition-all cursor-pointer ${item.color} ${
-                        (user?.preferredTheme || "light") === item.name
-                          ? "ring-2 ring-accent-primary scale-102 font-bold"
-                          : "opacity-70 hover:opacity-100"
-                      }`}
-                    >
-                      <span className="text-sm">{item.icon}</span>
-                      <span>{item.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </section>
+            </div>
           </div>
 
-          {/* RIGHT SIDE: Statistics, Streak, Badges & Shelf */}
-          <div className="lg:col-span-8 flex flex-col gap-6">
+          {/* Stats Badges row */}
+          <div className="flex gap-2.5 bg-bg-primary border border-border-primary rounded-xl p-3 md:self-center transition-colors duration-250">
+            <div className="text-center px-4 py-1.5 border-r border-border-primary">
+              <span className="text-[10px] text-text-muted block font-mono">Books</span>
+              <span className="text-sm font-bold text-text-primary">{totalBooks.toString().padStart(2, "0")}</span>
+            </div>
+            <div className="text-center px-4 py-1.5 border-r border-border-primary">
+              <span className="text-[10px] text-text-muted block font-mono">Published</span>
+              <span className="text-sm font-bold text-emerald-500">{publishedBooks.toString().padStart(2, "0")}</span>
+            </div>
+            <div className="text-center px-4 py-1.5">
+              <span className="text-[10px] text-text-muted block font-mono">Drafts</span>
+              <span className="text-sm font-bold text-text-secondary">{draftBooks.toString().padStart(2, "0")}</span>
+            </div>
+          </div>
+        </section>
+
+        {/* Navigation Tabs */}
+        <section className="border-b border-border-primary">
+          <div className="flex gap-6 text-xs pl-1">
+            {["Overview", "My Library", "Achievements", "Bookmarks", "Settings"].map((tab) => {
+              const isActive = activeTab === tab;
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`pb-3 transition-all duration-150 cursor-pointer ${
+                    isActive
+                      ? "text-text-primary border-b-2 border-accent-primary font-bold"
+                      : "text-text-muted hover:text-text-primary border-b-2 border-transparent"
+                  }`}
+                >
+                  {tab}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Tab Contents: Overview */}
+        {activeTab === "Overview" && (
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
             
-            {/* Row 1: Achievement Grid & Writing Streak */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+            {/* Left Column */}
+            <div className="md:col-span-5 flex flex-col gap-6">
               
-              {/* Writing Streak 🔥 widget */}
-              <div className="md:col-span-5 bg-gradient-to-tr from-amber-500 to-orange-600 text-white rounded-[24px] p-6 shadow-md shadow-orange-500/10 flex flex-col justify-between aspect-[4/3] md:aspect-auto md:h-full min-h-[160px]">
-                <div className="flex justify-between items-start">
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-100/90">
-                    🔥 Writing Streak
-                  </span>
-                  <span className="text-xl">⚡</span>
-                </div>
-                <div className="my-auto">
-                  <h3 className="font-display font-light text-4xl tracking-tight leading-none">
-                    {user?.streak || 12} Days
-                  </h3>
-                  <p className="text-[10px] text-amber-100 font-semibold uppercase tracking-wider mt-1.5">
-                    Keep writing everyday!
-                  </p>
-                </div>
+              {/* About Me Card */}
+              <div className="bg-bg-secondary border border-border-primary rounded-xl p-5 shadow-xs transition-colors duration-250">
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-text-muted block mb-3 pl-0.5">
+                  About Me
+                </span>
+                <p className="text-xs text-text-secondary font-normal leading-relaxed pl-0.5">
+                  {user?.bio ? (
+                    user.bio
+                  ) : (
+                    <>
+                      AI & Science Student passionate about AI, Writing and Technology.<br />
+                      Currently building AI powered publishing tools.
+                    </>
+                  )}
+                </p>
               </div>
 
-              {/* Achievements Badges section */}
-              <div className="md:col-span-7 bg-bg-secondary border border-border-primary rounded-[24px] p-6 shadow-xs flex flex-col justify-between text-text-primary transition-colors duration-250">
-                <span className="text-[9px] font-extrabold uppercase tracking-widest text-text-muted mb-3 block">
-                  Achievements Badges
+              {/* Subscription Details Card */}
+              <div className="bg-bg-secondary border border-border-primary rounded-xl p-5 shadow-xs transition-colors duration-250 flex flex-col gap-4">
+                <div className="flex items-center justify-between pl-0.5">
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-text-muted">
+                    Subscription & Billing
+                  </span>
+                  <span className={`px-2 py-0.5 rounded-full text-[9px] uppercase font-bold tracking-wider ${
+                    user?.subscriptionTier === "pro"
+                      ? "bg-amber-500/10 text-amber-600 border border-amber-500/20"
+                      : user?.subscriptionTier === "premium"
+                        ? "bg-[#8B5CF6]/10 text-[#8B5CF6] border border-[#8B5CF6]/20"
+                        : user?.subscriptionTier === "lifetime"
+                          ? "bg-amber-500/15 text-amber-500 border-amber-500/30"
+                          : "bg-bg-primary text-text-muted border border-border-primary"
+                  }`}>
+                    {user?.subscriptionTier ? user.subscriptionTier.toUpperCase() : "FREE"} PLAN
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-2 text-[11px] font-semibold text-text-secondary pl-0.5">
+                  <div className="flex justify-between items-center py-0.5">
+                    <span className="opacity-75">Next Billing</span>
+                    <span className="text-text-primary font-mono font-bold">
+                      {user?.subscriptionTier === "lifetime" 
+                        ? "Never (Lifetime)" 
+                        : user?.subscriptionExpiresAt 
+                          ? new Date(user.subscriptionExpiresAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                          : "July 20, 2026"}
+                    </span>
+                  </div>
+                  <div className="w-full h-px bg-border-primary/50"></div>
+                  <div className="flex justify-between items-center py-0.5">
+                    <span className="opacity-75">Books Created</span>
+                    <span className="text-text-primary font-mono font-bold">{totalBooks} / {user?.subscriptionTier === "free" ? "2" : "Unlimited"}</span>
+                  </div>
+                  <div className="w-full h-px bg-border-primary/50"></div>
+                  <div className="flex justify-between items-center py-0.5">
+                    <span className="opacity-75">AI Generations</span>
+                    <span className="text-text-primary font-mono font-bold">
+                      {user?.subscriptionTier === "free" ? "0 / 5" : "Unlimited (∞)"}
+                    </span>
+                  </div>
+                  <div className="w-full h-px bg-border-primary/50"></div>
+                  <div className="flex justify-between items-center py-0.5">
+                    <span className="opacity-75">EPUB/PDF Exports</span>
+                    <span className="text-text-primary font-mono font-bold">
+                      {user?.subscriptionTier === "free" ? "1 / 2" : "Unlimited (∞)"}
+                    </span>
+                  </div>
+                </div>
+
+                <Link
+                  to="/pricing"
+                  className="w-full h-9 bg-[#8B5CF6] hover:bg-[#7c3aed] text-white active:scale-[0.98] rounded-xl text-[10px] font-bold tracking-wider uppercase transition-all flex items-center justify-center cursor-pointer shadow-md shadow-[#8B5CF6]/10"
+                >
+                  Manage Subscription
+                </Link>
+              </div>
+
+            </div>
+
+            {/* Right Column */}
+            <div className="md:col-span-7 flex flex-col gap-6">
+              
+              {/* Most Popular Book */}
+              <div className="flex flex-col gap-3">
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-text-muted block pl-0.5">
+                  Most Popular Book
                 </span>
-                
-                <div className="grid grid-cols-2 gap-3">
+
+                {books.length > 0 && popularBook ? (
+                  <div className="bg-bg-secondary border border-border-primary rounded-xl p-5 shadow-xs flex flex-col sm:flex-row gap-5 items-center relative overflow-hidden transition-colors duration-250">
+                    {/* Book Cover */}
+                    <div className="w-[100px] sm:w-[85px] shrink-0 self-stretch flex items-center justify-center">
+                      <div className="w-full aspect-[3/4.2] rounded-[6px] overflow-hidden shadow-md">
+                        <BookShelfCover config={getCoverConfig(popularBook)} title={popularBook?.title || ""} className="hover:scale-100 aspect-[3/4.2]" />
+                      </div>
+                    </div>
+
+                    {/* Book Info */}
+                    <div className="flex-1 flex flex-col justify-between h-full w-full">
+                      <div className="mb-3">
+                        {/* Category */}
+                        <span className="bg-accent-primary/10 text-accent-primary border border-accent-primary/20 px-2 py-0.5 rounded-full font-mono text-[8px] uppercase font-bold tracking-wider inline-block mb-1.5">
+                          {popularBook?.description?.split("\n")[0]?.replace("Category: ", "") || "Technology"}
+                        </span>
+
+                        {/* Title */}
+                        <h3 className="font-sans font-bold text-base text-text-primary leading-snug line-clamp-2 mb-1.5">
+                          {popularBook?.title || "eBook Title"}
+                        </h3>
+
+                        {/* Reads & Rating */}
+                        <div className="flex items-center gap-3 text-[10px] font-bold text-text-muted uppercase tracking-wide">
+                          <span>👁 {popularBook?.reads || 0} Reads</span>
+                          <span className="text-border-primary">|</span>
+                          <span className="text-amber-555 dark:text-amber-400">★ {getBookAvgRating(popularBook)} Rating</span>
+                        </div>
+                      </div>
+
+                      {/* Continue Button */}
+                      <div>
+                        <Link
+                          to={`/editor?bookId=${popularBook?._id}`}
+                          className="inline-flex items-center gap-1.5 h-8 px-4 bg-accent-primary hover:bg-accent-hover text-white active:scale-[0.98] rounded-lg text-[10px] font-bold tracking-wider uppercase transition-all shadow-md shadow-accent-primary/10"
+                        >
+                          ✍️ Continue Reading
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-bg-secondary border border-border-primary rounded-xl p-8 text-center text-text-muted text-xs font-medium transition-colors duration-250">
+                    No books created yet. Start by writing your first book!
+                  </div>
+                )}
+              </div>
+
+              {/* Writing Achievements Grid */}
+              <div className="bg-bg-secondary border border-border-primary rounded-xl p-5 shadow-xs transition-colors duration-250">
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-text-muted block mb-4 pl-0.5">
+                  Writing Achievements
+                </span>
+
+                <div className="grid grid-cols-2 gap-4">
                   {[
-                    { icon: "🏆", title: "First Book", active: books.length > 0, desc: "Created an outline" },
-                    { icon: "🔥", title: "10 Day Streak", active: (user?.streak || 12) >= 10, desc: "Active writing streak" },
-                    { icon: "✍", title: "10k Words", active: totalWordsWritten >= 10000, desc: "Total cumulative words" },
-                    { icon: "📚", title: "Published", active: publishedBooks > 0, desc: "Made a book public" },
+                    { icon: "🏆", title: "First Book", active: books.length > 0 },
+                    { icon: "🔥", title: "10 Day Streak", active: (user?.streak || 12) >= 10 },
+                    { icon: "📚", title: "Published Author", active: publishedBooks > 0 },
+                    { icon: "✍️", title: "10K Words", active: totalWordsWritten >= 10000 },
                   ].map((badge, idx) => (
                     <div
                       key={idx}
-                      className={`flex items-center gap-3 p-2.5 rounded-xl border transition-all ${
+                      className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-300 ${
                         badge.active
-                          ? "bg-accent-primary/10 border-accent-primary/20 text-text-primary"
-                          : "bg-bg-tertiary border-border-primary opacity-40 text-text-muted"
+                          ? "bg-accent-primary/10 border-accent-primary text-text-primary shadow-xs"
+                          : "bg-bg-secondary border-border-primary opacity-35 blur-[0.5px] text-text-muted"
                       }`}
                     >
-                      <span className="text-xl shrink-0">{badge.icon}</span>
-                      <div className="min-w-0">
-                        <h4 className="text-[10px] font-extrabold uppercase tracking-wider truncate">
-                          {badge.title}
-                        </h4>
-                        <span className="text-[8px] opacity-70 block truncate leading-none mt-0.5">
-                          {badge.desc}
-                        </span>
-                      </div>
+                      <span className="text-2xl shrink-0">{badge.icon}</span>
+                      <h4 className="text-[10px] font-bold uppercase tracking-wider">
+                        {badge.title}
+                      </h4>
                     </div>
                   ))}
                 </div>
               </div>
 
             </div>
+          </div>
+        )}
 
-            {/* Row 2: Standard Stats & Popular Book */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-              
-              {/* Stats Grid */}
-              <div className="md:col-span-7 grid grid-cols-2 gap-3">
-                {[
-                  { label: "Total eBooks", value: totalBooks, color: "text-text-primary" },
-                  { label: "Published Books", value: publishedBooks, color: "text-emerald-500" },
-                  { label: "Drafts", value: draftBooks, color: "text-text-secondary" },
-                  { label: "Total Words", value: totalWordsWritten, color: "text-accent-primary", isWords: true },
-                ].map((stat, idx) => (
-                  <div key={idx} className="bg-bg-secondary border border-border-primary rounded-2xl p-4 flex flex-col justify-between shadow-xs transition-colors duration-250">
-                    <span className="text-[9px] font-extrabold uppercase tracking-widest text-text-muted block">
-                      {stat.label}
-                    </span>
-                    <span className={`font-display font-light text-2xl mt-2 block ${stat.color}`}>
-                      {stat.isWords
-                        ? (stat.value > 10000 ? `${Math.round(stat.value / 1000)}k` : stat.value.toLocaleString())
-                        : stat.value.toString().padStart(2, "0")
-                      }
-                    </span>
-                  </div>
+        {/* Tab Contents: My Library */}
+        {activeTab === "My Library" && (
+          <section className="bg-bg-secondary border border-border-primary rounded-xl p-6 sm:p-8 shadow-xs flex flex-col gap-6 transition-colors duration-250">
+            <div>
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-text-muted block mb-1">
+                My Library Shelf
+              </span>
+              <p className="text-[10px] text-text-muted">Instagram creator post grid style</p>
+            </div>
+
+            {loading ? (
+              <div className="grid grid-cols-3 gap-[20px]">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="aspect-square bg-bg-tertiary/20 border border-border-primary rounded-[16px] animate-pulse" />
                 ))}
               </div>
- 
-              {/* Most Popular Book Card */}
-              <div className="md:col-span-5 bg-bg-secondary border border-border-primary rounded-[24px] p-5 shadow-xs flex flex-col justify-between text-text-primary transition-colors duration-250">
-                <span className="text-[9px] font-extrabold uppercase tracking-widest text-text-muted block mb-2">
-                  Most Popular Book
+            ) : books.length === 0 ? (
+              <div className="text-center py-12 bg-transparent border border-dashed border-border-primary rounded-[16px] flex flex-col items-center justify-center p-6">
+                <span className="text-text-secondary text-xs font-semibold block mb-4">
+                  You haven't created enough books yet.
                 </span>
-                
-                <div className="flex items-center gap-3 py-1">
-                  <div className="w-[50px] shrink-0">
-                    <BookShelfCover config={getCoverConfig(popularBook)} title={popularBook?.title || ""} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="font-display font-medium text-xs text-text-primary leading-snug line-clamp-2">
-                      {popularBook?.title || "eBook Title"}
-                    </h4>
-                    <div className="flex items-center gap-2 mt-1.5 text-[9px] font-bold text-text-secondary uppercase tracking-wide">
-                      <span className="flex items-center gap-0.5">👁 {popularBook?.reads || 0} Reads</span>
-                      <span className="text-border-primary">|</span>
-                      <span className="text-amber-500">★ {getBookAvgRating(popularBook)}</span>
-                    </div>
-                  </div>
-                </div>
+                <button
+                  onClick={() => navigate("/dashboard", { state: { openCreateModal: true } })}
+                  className="px-5 py-2.5 bg-accent-primary hover:bg-accent-hover text-white text-[10px] font-extrabold uppercase tracking-wider rounded-[16px] transition-all shadow-md shadow-accent-primary/10 cursor-pointer"
+                >
+                  + Create New eBook
+                </button>
               </div>
-            </div>
-
-            {/* Row 3: Reading Analytics & Monthly Progress Chart */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-              
-              {/* Reading Analytics */}
-              <div className="md:col-span-5 bg-bg-secondary border border-border-primary rounded-[24px] p-5 shadow-xs flex flex-col justify-between transition-colors duration-250">
-                <span className="text-[9px] font-extrabold uppercase tracking-widest text-text-muted block mb-3">
-                  Reading Analytics
-                </span>
-                
-                <div className="flex flex-col gap-2.5 text-xs font-semibold text-text-secondary">
-                  <div className="flex justify-between items-center py-0.5">
-                    <span className="opacity-75">Total Reads</span>
-                    <span className="text-text-primary font-mono font-extrabold">{totalReads}</span>
-                  </div>
-                  <div className="w-full h-px bg-border-primary"></div>
-                  <div className="flex justify-between items-center py-0.5">
-                    <span className="opacity-75">Est. Pages Written</span>
-                    <span className="text-text-primary font-mono font-extrabold">
-                      {totalWordsWritten > 0 ? Math.round(totalWordsWritten / 250) : 0}
-                    </span>
-                  </div>
-                  <div className="w-full h-px bg-border-primary"></div>
-                  <div className="flex justify-between items-center py-0.5">
-                    <span className="opacity-75">Avg Rating</span>
-                    <span className="text-accent-primary font-mono font-extrabold">
-                      ★ {avgAuthorRating} ({totalReviewsCount} Reviews)
-                    </span>
-                  </div>
-                </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-[20px]">
+                {books.map((book) => (
+                  <LibraryGridCard
+                    key={book._id}
+                    book={book}
+                    onPreview={(id) => navigate(`/view-book/${id}`)}
+                    onEdit={(id) => navigate(`/editor?bookId=${id}`)}
+                    onDelete={handleDeleteBook}
+                    getCoverConfig={getCoverConfig}
+                  />
+                ))}
               </div>
+            )}
+          </section>
+        )}
 
-              {/* Progress Chart 📈 */}
-              <div className="md:col-span-7 bg-bg-secondary border border-border-primary rounded-[24px] p-5 shadow-xs flex flex-col justify-between transition-colors duration-250">
-                <span className="text-[9px] font-extrabold uppercase tracking-widest text-text-muted block mb-4">
-                  Words Written (Words/Month)
-                </span>
-                
-                {/* Horizontal CSS Graph */}
-                <div className="flex flex-col gap-3">
-                  {[
-                    { month: "Jan", words: 2500, percent: "w-[30%]", color: "bg-border-primary" },
-                    { month: "Feb", words: 5800, percent: "w-[65%]", color: "bg-text-muted/50" },
-                    { month: "Mar", words: 7200, percent: "w-[85%]", color: "bg-accent-primary shadow-xs" },
-                    { month: "Apr", words: 4100, percent: "w-[48%]", color: "bg-border-primary" },
-                  ].map((bar, idx) => (
-                    <div key={idx} className="flex items-center gap-3">
-                      <span className="text-[10px] font-bold text-text-muted w-7 font-mono">{bar.month}</span>
-                      <div className="flex-1 h-3 bg-bg-tertiary rounded-full overflow-hidden border border-border-primary">
-                        <div className={`h-full rounded-full transition-all duration-500 ${bar.color} ${bar.percent}`}></div>
-                      </div>
-                      <span className="text-[9px] font-bold text-text-secondary font-mono w-10 text-right">
-                        {bar.words.toLocaleString()}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-            </div>
-
-            {/* Row 4: Recent Activity & Export History */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-              <div className="md:col-span-6 bg-bg-secondary border border-border-primary rounded-[24px] p-5 shadow-xs transition-colors duration-250">
-                <span className="text-[9px] font-extrabold uppercase tracking-widest text-text-muted block mb-4">
-                  Recent Activity Log
-                </span>
-                
-                {/* Notion Style Logs list */}
-                <div className="flex flex-col gap-3 font-semibold text-[10px] text-text-secondary pl-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-emerald-500 text-xs">✓</span>
-                    <span>Created book catalog outline</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-emerald-500 text-xs">✓</span>
-                    <span>Generated Chapter 1 content drafts</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-emerald-500 text-xs">✓</span>
-                    <span>Updated Cover gradient design layout</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-emerald-500 text-xs">✓</span>
-                    <span>Exported PDF complete book payload</span>
-                  </div>
-                </div>
-              </div>
- 
-              {/* Export History */}
-              <div className="md:col-span-6 bg-bg-secondary border border-border-primary rounded-[24px] p-5 shadow-xs flex flex-col justify-between transition-colors duration-250">
-                <div>
-                  <span className="text-[9px] font-extrabold uppercase tracking-widest text-text-muted block mb-4">
-                    Recent Downloads
-                  </span>
-                  
-                  <div className="flex flex-col gap-2 font-mono text-[9px] font-extrabold text-text-secondary uppercase tracking-widest">
-                    <div className="flex items-center justify-between p-2 bg-bg-tertiary rounded-xl border border-border-primary">
-                      <span>📄 Book_Outline.pdf</span>
-                      <span className="text-accent-primary bg-accent-primary/10 px-2 py-0.5 rounded font-semibold text-[8px]">PDF</span>
-                    </div>
-                    <div className="flex items-center justify-between p-2 bg-bg-tertiary rounded-xl border border-border-primary">
-                      <span>📖 Final_Draft.epub</span>
-                      <span className="text-emerald-600 bg-emerald-50/10 px-2 py-0.5 rounded font-semibold text-[8px]">EPUB</span>
-                    </div>
-                    <div className="flex items-center justify-between p-2 bg-bg-tertiary rounded-xl border border-border-primary">
-                      <span>📝 Manuscript_Ch1.docx</span>
-                      <span className="text-amber-600 bg-amber-50/10 px-2 py-0.5 rounded font-semibold text-[8px]">DOCX</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Shelf */}
-            <section className="bg-bg-secondary border border-border-primary rounded-[24px] p-6 sm:p-8 shadow-xs flex flex-col gap-5 mt-4 transition-colors duration-250">
-              <div className="flex items-center justify-between">
-                <span className="text-[9px] font-extrabold uppercase tracking-widest text-text-muted">
-                  My Library Shelf
-                </span>
-                <Link to="/dashboard" className="text-[9px] font-bold text-accent-primary hover:text-accent-hover uppercase tracking-wider">
-                  Manage eBooks →
-                </Link>
-              </div>
- 
-              {loading ? (
-                <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-4">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="aspect-[3/4.2] bg-bg-tertiary rounded animate-pulse" />
-                  ))}
-                </div>
-              ) : books.length === 0 ? (
-                <div className="text-center py-10 bg-bg-tertiary/50 border border-dashed border-border-primary rounded-2xl">
-                  <span className="text-text-muted text-xs font-semibold block mb-2">No books on your shelf yet</span>
-                  <Link
-                    to="/dashboard"
-                    className="inline-block px-4 py-2 bg-accent-primary hover:bg-accent-hover text-white text-[10px] font-extrabold uppercase tracking-wider rounded-xl transition-all shadow-md shadow-indigo-600/10"
-                  >
-                    + Create Your First eBook
-                  </Link>
-                </div>
-              ) : (
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
-                  {books.map((book) => (
-                    <Link
-                      key={book._id}
-                      to={`/editor?bookId=${book._id}`}
-                      className="flex flex-col gap-2 group"
-                      title={`Edit "${book.title}"`}
-                    >
-                      <BookShelfCover config={getCoverConfig(book)} title={book.title} />
-                      <span className="text-[9px] font-semibold text-text-secondary truncate block text-center group-hover:text-text-primary group-hover:underline">
-                        {book.title}
-                      </span>
-                      <div className="flex items-center justify-center gap-1.5 text-[8px] font-mono text-text-muted">
-                        <span>👁 {book.reads || 0}</span>
-                        <span>★ {book.reviews?.length > 0 ? (book.reviews.reduce((acc, r) => acc + r.rating, 0) / book.reviews.length).toFixed(1) : "0.0"}</span>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </section>
-          </div>
-        </div>
-
-      </main>
-
-      {/* MODAL: Profile Details Editor */}
-      {isEditModalOpen && (
-        <div className="fixed inset-0 bg-black/45 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <form
-            onSubmit={handleSaveProfile}
-            className="bg-bg-primary rounded-[24px] border border-border-primary w-full max-w-[420px] shadow-2xl p-6 flex flex-col gap-4 animate-scaleUp text-text-primary"
-          >
+        {/* Tab Contents: Achievements */}
+        {activeTab === "Achievements" && (
+          <section className="bg-bg-secondary border border-border-primary rounded-xl p-6 shadow-xs flex flex-col gap-6 transition-colors duration-250">
             <div>
-              <h3 className="font-display font-light text-xl text-text-primary">
-                Edit Bio Details
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-text-muted block mb-1">
+                Author Achievements
+              </span>
+              <p className="text-[10px] text-text-muted">Review milestones and unlocked badges</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {[
+                { icon: "🏆", title: "First Book", desc: "Successfully created your first eBook layout.", active: books.length > 0 },
+                { icon: "🔥", title: "10 Day Streak", desc: "Write consistently for 10 days in a row.", active: (user?.streak || 12) >= 10 },
+                { icon: "📚", title: "Published Author", desc: "Make at least one eBook public in discover.", active: publishedBooks > 0 },
+                { icon: "✍️", title: "10K Words Written", desc: "Reach 10,005 accumulated words across drafts.", active: totalWordsWritten >= 10000 },
+              ].map((badge, idx) => (
+                <div
+                  key={idx}
+                  className={`flex gap-4 p-4 rounded-xl border items-center transition-all ${
+                    badge.active
+                      ? "bg-accent-primary/10 border-accent-primary text-text-primary shadow-xs"
+                      : "bg-bg-secondary border-border-primary opacity-35 blur-[0.4px] text-text-muted"
+                  }`}
+                >
+                  <span className="text-4xl shrink-0">{badge.icon}</span>
+                  <div>
+                    <h4 className="text-xs font-extrabold uppercase tracking-wide text-text-primary">{badge.title}</h4>
+                    <p className="text-[10px] text-text-secondary mt-1">{badge.desc}</p>
+                    <span className="inline-block mt-2 font-mono text-[8px] bg-bg-tertiary px-2 py-0.5 rounded uppercase tracking-wider font-semibold text-text-secondary">
+                      {badge.active ? "Unlocked ✓" : "Locked 🔒"}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Tab Contents: Bookmarks */}
+        {activeTab === "Bookmarks" && (
+          <section className="bg-bg-secondary border border-border-primary rounded-xl p-8 shadow-xs text-center flex flex-col items-center justify-center min-h-[220px] transition-colors duration-250">
+            <span className="text-3xl mb-3">🔖</span>
+            <h3 className="font-sans font-semibold text-sm text-text-primary mb-1">
+              Your Bookmarked Drafts
+            </h3>
+            <p className="text-xs text-text-secondary max-w-sm leading-relaxed">
+              You haven't bookmarked any books yet. Save your favorite drafts or published works here.
+            </p>
+          </section>
+        )}
+
+        {/* Tab Contents: Settings */}
+        {activeTab === "Settings" && (
+          <section className="bg-bg-secondary border border-border-primary rounded-xl p-6 shadow-xs max-w-xl mx-auto w-full transition-colors duration-250">
+            <div>
+              <h3 className="font-sans font-semibold text-lg text-text-primary">
+                Profile Settings
               </h3>
-              <p className="text-[10px] text-text-muted font-semibold uppercase tracking-wider mt-0.5">
-                Update your public author profile details
+              <p className="text-[9px] text-text-muted font-semibold uppercase tracking-wider mt-0.5 mb-4">
+                Update your public profile configuration
               </p>
             </div>
 
-            <div className="w-full h-px bg-border-primary"></div>
-
-            {/* Input 1: Username */}
-            <div className="flex flex-col gap-1">
-              <label className="text-[9px] font-bold text-text-muted uppercase tracking-widest pl-1">
-                Author Username
-              </label>
-              <input
-                type="text"
-                value={editUsername}
-                onChange={(e) => setEditUsername(e.target.value)}
-                required
-                placeholder="Name"
-                className="w-full bg-bg-secondary border border-border-primary rounded-lg px-2.5 py-2 text-xs outline-none text-text-primary font-medium"
-              />
-            </div>
-
-            {/* Input 2: Avatar File Upload & URL */}
-            <div className="flex flex-col gap-2">
-              <label className="text-[9px] font-bold text-text-muted uppercase tracking-widest pl-1">
-                Profile Picture
-              </label>
-              
-              <div className="flex items-center gap-3 bg-bg-secondary border border-border-primary rounded-xl p-3">
-                <div className="shrink-0">
-                  {editAvatar ? (
-                    <img
-                      src={editAvatar}
-                      alt="Preview"
-                      className="h-12 w-12 rounded-full object-cover border border-border-primary shadow-sm"
-                    />
-                  ) : (
-                    <div className="h-12 w-12 rounded-full bg-accent-primary/10 text-accent-primary flex items-center justify-center text-xs font-bold font-mono">
-                      {displayInitials}
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex-1 flex flex-col gap-1">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="text-[10px] text-text-secondary file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[9px] file:font-bold file:uppercase file:tracking-wider file:bg-accent-primary/10 file:text-accent-primary hover:file:bg-accent-primary/20 cursor-pointer w-full"
-                  />
-                  <span className="text-[8px] text-text-muted">PNG, JPG up to 5MB</span>
-                </div>
+            <form onSubmit={handleSaveProfile} className="flex flex-col gap-4 text-text-primary">
+              {/* Username */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[9px] font-bold text-text-muted uppercase tracking-widest pl-1">
+                  Author Username
+                </label>
+                <input
+                  type="text"
+                  value={editUsername}
+                  onChange={(e) => setEditUsername(e.target.value)}
+                  required
+                  className="w-full bg-bg-primary border border-border-primary rounded-lg px-3 py-2 text-xs outline-none text-text-primary font-medium focus:border-accent-primary transition-colors duration-250"
+                />
               </div>
 
-              {/* Paste URL option */}
-              <input
-                type="text"
-                value={editAvatar}
-                onChange={(e) => setEditAvatar(e.target.value)}
-                placeholder="Or paste image URL directly..."
-                className="w-full bg-bg-secondary border border-border-primary rounded-lg px-2.5 py-1.5 text-[10px] outline-none text-text-primary font-mono"
-              />
-            </div>
+              {/* Location */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[9px] font-bold text-text-muted uppercase tracking-widest pl-1">
+                  Location
+                </label>
+                <input
+                  type="text"
+                  value={editLocation}
+                  onChange={(e) => setEditLocation(e.target.value)}
+                  placeholder="e.g. Jaipur, India"
+                  className="w-full bg-bg-primary border border-border-primary rounded-lg px-3 py-2 text-xs outline-none text-text-primary font-medium focus:border-accent-primary transition-colors duration-250"
+                />
+              </div>
 
-            {/* Input 3: Location */}
-            <div className="flex flex-col gap-1">
-              <label className="text-[9px] font-bold text-text-muted uppercase tracking-widest pl-1">
-                Location
-              </label>
-              <input
-                type="text"
-                value={editLocation}
-                onChange={(e) => setEditLocation(e.target.value)}
-                placeholder="e.g. Jaipur, India"
-                className="w-full bg-bg-secondary border border-border-primary rounded-lg px-2.5 py-2 text-xs outline-none text-text-primary font-medium"
-              />
-            </div>
+              {/* Bio */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[9px] font-bold text-text-muted uppercase tracking-widest pl-1">
+                  About / Biography
+                </label>
+                <textarea
+                  value={editBio}
+                  onChange={(e) => setEditBio(e.target.value)}
+                  rows="3"
+                  className="w-full bg-bg-primary border border-border-primary rounded-lg px-3 py-2 text-xs outline-none text-text-primary resize-none leading-relaxed focus:border-accent-primary transition-colors duration-250"
+                />
+              </div>
 
-            {/* Input 4: Biography */}
-            <div className="flex flex-col gap-1">
-              <label className="text-[9px] font-bold text-text-muted uppercase tracking-widest pl-1">
-                About / Biography
-              </label>
-              <textarea
-                value={editBio}
-                onChange={(e) => setEditBio(e.target.value)}
-                rows="3"
-                placeholder="Tell readers about yourself..."
-                className="w-full bg-bg-secondary border border-border-primary rounded-lg px-2.5 py-2 text-xs outline-none text-text-primary font-medium resize-none leading-relaxed"
-              />
-            </div>
+              {/* Avatar upload shortcut */}
+              <div className="flex flex-col gap-2">
+                <label className="text-[9px] font-bold text-text-muted uppercase tracking-widest pl-1">
+                  Profile Picture
+                </label>
+                
+                <div className="flex items-center gap-3 bg-bg-primary border border-border-primary rounded-xl p-3 transition-colors duration-250">
+                  <div className="shrink-0">
+                    {editAvatar ? (
+                      <img
+                        src={editAvatar}
+                        alt="Preview"
+                        className="h-12 w-12 rounded-full object-cover border border-border-primary shadow-xs"
+                      />
+                    ) : (
+                      <div className="h-12 w-12 rounded-full bg-accent-primary/20 text-accent-primary flex items-center justify-center text-xs font-bold font-mono">
+                        {displayInitials}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex-1 flex flex-col gap-1">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-3 py-1.5 rounded-lg border border-border-primary bg-bg-secondary text-text-primary hover:bg-accent-primary hover:text-white transition-all text-[10px] font-bold uppercase tracking-wider cursor-pointer"
+                    >
+                      Choose Avatar Image
+                    </button>
+                    <span className="text-[8px] text-text-muted">PNG, JPG up to 5MB</span>
+                  </div>
+                </div>
 
-            <div className="flex items-center justify-end gap-2 mt-2 pt-2 border-t border-border-primary">
-              <button
-                type="button"
-                onClick={() => setIsEditModalOpen(false)}
-                className="px-4 py-2 border border-border-primary hover:border-text-primary text-text-secondary hover:text-text-primary rounded-xl text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-5 py-2 bg-accent-primary hover:bg-accent-hover text-white rounded-xl text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
-              >
-                Save Changes
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+                <input
+                  type="text"
+                  value={editAvatar}
+                  onChange={(e) => setEditAvatar(e.target.value)}
+                  placeholder="Or paste image URL directly..."
+                  className="w-full bg-bg-primary border border-border-primary rounded-lg px-3 py-1.5 text-[10px] outline-none text-text-primary font-mono focus:border-accent-primary transition-colors duration-250"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 mt-2 pt-2 border-t border-border-primary">
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-accent-primary hover:bg-accent-hover text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </section>
+        )}
+
+      </main>
 
     </div>
   );

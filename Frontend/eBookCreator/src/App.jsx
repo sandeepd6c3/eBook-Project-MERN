@@ -10,6 +10,7 @@ import EditorPage from './pages/EditorPage'
 import ProfilePage from './pages/ProfilePage'
 import ViewBookPage from './pages/ViewBookPage'
 import DiscoverPage from './pages/DiscoverPage'
+import PricingPage from './pages/PricingPage'
 
 
 import ThemeSwitcher from './components/ui/ThemeSwitcher'
@@ -46,6 +47,14 @@ const App = () => {
           element={
             <ProtectedRouts>
               <ProfilePage />
+            </ProtectedRouts>
+          }
+        />
+        <Route
+          path="/pricing"
+          element={
+            <ProtectedRouts>
+              <PricingPage />
             </ProtectedRouts>
           }
         />

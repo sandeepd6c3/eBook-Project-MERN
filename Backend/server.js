@@ -15,8 +15,14 @@ app.use(
     })
 );
 
-// Parse JSON bodies
-app.use(express.json());
+// Parse JSON bodies (capture raw body for Stripe signature checks)
+app.use(
+    express.json({
+        verify: (req, res, buf) => {
+            req.rawBody = buf;
+        },
+    })
+);
 
 // static folder for uploads
 app.use("/Backend/uploads", express.static(path.join(__dirname, "uploads")));
@@ -25,11 +31,13 @@ app.use("/Backend/uploads", express.static(path.join(__dirname, "uploads")));
 const authRoutes = require("./routes/authRoutes");
 const bookRoutes = require("./routes/bookRoutes");
 const aiRoutes = require("./routes/aiRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
 
 // Mount routes
 app.use("/api/auth", authRoutes);
 app.use("/api/books", bookRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/payment", paymentRoutes);
 
 // Connect to the database, then start the server
 connectDB()
