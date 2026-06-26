@@ -161,6 +161,8 @@ const EditorPage = () => {
   const [tempGradient, setTempGradient] = useState("linear-gradient(135deg, #1e3a8a, #3b82f6)");
   const [tempStyle, setTempStyle] = useState("modern");
   const [tempImageUrl, setTempImageUrl] = useState("");
+  const [aiCoverPrompt, setAiCoverPrompt] = useState("");
+  const [isAiCoverGenerating, setIsAiCoverGenerating] = useState(false);
 
   // AI Chat states
   const [aiChatInput, setAiChatInput] = useState("");
@@ -447,6 +449,12 @@ const EditorPage = () => {
         }),
       });
 
+      if (response.status === 403) {
+        const errData = await response.json();
+        if (errData.limitReached) { setIsUpgradeModalOpen(true); }
+        else { toast.error(errData.message || "Access denied."); }
+        return;
+      }
       if (!response.ok) throw new Error("AI Generation failed");
 
       const data = await response.json();
@@ -513,6 +521,12 @@ const EditorPage = () => {
         }),
       });
 
+      if (response.status === 403) {
+        const errData = await response.json();
+        if (errData.limitReached) { setIsUpgradeModalOpen(true); }
+        else { toast.error(errData.message || "Access denied."); }
+        return;
+      }
       if (!response.ok) throw new Error("AI drafting failed");
 
       const data = await response.json();
@@ -721,6 +735,12 @@ const EditorPage = () => {
         }),
       });
 
+      if (response.status === 403) {
+        const errData = await response.json();
+        if (errData.limitReached) { setIsUpgradeModalOpen(true); }
+        else { toast.error(errData.message || "Access denied."); }
+        return;
+      }
       if (!response.ok) throw new Error("AI edit failed");
 
       const data = await response.json();
@@ -774,6 +794,12 @@ const EditorPage = () => {
         }),
       });
 
+      if (response.status === 403) {
+        const errData = await response.json();
+        if (errData.limitReached) { setIsUpgradeModalOpen(true); }
+        else { toast.error(errData.message || "Access denied."); }
+        return;
+      }
       if (!response.ok) throw new Error("AI Chat failed");
 
       const data = await response.json();
@@ -798,6 +824,50 @@ const EditorPage = () => {
     else if (pill === "Summarize") promptText = `Summarize the following ${target} in 3 bullet points`;
     
     handleSendAIChat(promptText);
+  };
+
+  // Generate AI Cover Image
+  const handleGenerateAICover = async () => {
+    if (!aiCoverPrompt.trim()) {
+      toast.error("Describe your cover image first.");
+      return;
+    }
+    if ((user?.subscriptionTier || 'free') === 'free') {
+      // Still allow the call — the backend will enforce the actual limit
+    }
+    setIsAiCoverGenerating(true);
+    const token = localStorage.getItem("token");
+    try {
+      const response = await fetch(`${API_AI}/generate-cover`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ prompt: aiCoverPrompt }),
+      });
+
+      if (response.status === 403) {
+        const data = await response.json();
+        if (data.limitReached) {
+          setIsUpgradeModalOpen(true);
+        } else {
+          toast.error(data.message || "Access denied.");
+        }
+        return;
+      }
+
+      if (!response.ok) throw new Error("AI Cover generation failed");
+
+      const data = await response.json();
+      setTempImageUrl(data.imageUrl);
+      toast.success("AI Cover image generated!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Cover generation failed. Try again.");
+    } finally {
+      setIsAiCoverGenerating(false);
+    }
   };
 
   // Save modified cover configuration
@@ -2121,10 +2191,39 @@ const EditorPage = () => {
                     </select>
                   </div>
  
-                  {/* Cover Image URL input */}
+                  {/* AI Cover Image Generator */}
+                  <div className="flex flex-col gap-1.5 bg-bg-secondary border border-accent-primary/30 rounded-xl p-3">
+                    <label className="text-[9px] font-bold text-accent-primary uppercase tracking-wider pl-0.5 flex items-center gap-1">
+                      ✨ AI Cover Generator
+                    </label>
+                    <textarea
+                      value={aiCoverPrompt}
+                      onChange={(e) => setAiCoverPrompt(e.target.value)}
+                      placeholder="e.g. A futuristic cityscape at sunset with glowing neon lights and floating books..."
+                      rows={2}
+                      className="w-full bg-bg-primary border border-border-primary rounded-lg px-2.5 py-2 text-xs outline-none text-text-primary resize-none focus:border-accent-primary transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleGenerateAICover}
+                      disabled={isAiCoverGenerating || !aiCoverPrompt.trim()}
+                      className="w-full h-[34px] bg-accent-primary hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-white text-[9px] font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      {isAiCoverGenerating ? (
+                        <>
+                          <span className="inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                          Generating...
+                        </>
+                      ) : (
+                        "✨ Generate Cover with AI"
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Cover Image URL input (manual) */}
                   <div className="flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider pl-1">
-                      Cover Image URL
+                      Or Paste Image URL
                     </label>
                     <input
                       type="text"

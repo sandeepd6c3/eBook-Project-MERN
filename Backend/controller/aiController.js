@@ -1,10 +1,46 @@
 const { GoogleGenAI } = require("@google/genai");
+const User = require("../models/user");
+const path = require("path");
+const fs = require("fs");
+const https = require("https");
+const http = require("http");
 
 // Initialize Google Gen AI client if API Key is set
 let ai = null;
 if (process.env.GEMINI_API_KEY) {
   ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 }
+
+// Ensure covers upload directory exists
+const coversDir = path.join(__dirname, "..", "uploads", "covers");
+if (!fs.existsSync(coversDir)) {
+  fs.mkdirSync(coversDir, { recursive: true });
+}
+
+// FREE_TIER_AI_LIMIT: Maximum AI generations for free users
+const FREE_TIER_AI_LIMIT = 5;
+
+// Helper: Check and enforce AI generation limits for free users
+const checkAILimit = async (req, res) => {
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    res.status(401).json({ message: "User not found" });
+    return null;
+  }
+  if (user.subscriptionTier === "free" && user.aiGenerationsUsed >= FREE_TIER_AI_LIMIT) {
+    res.status(403).json({
+      message: "You've reached your free plan limit of 5 AI generations. Upgrade to Pro for unlimited AI access.",
+      limitReached: true,
+    });
+    return null;
+  }
+  return user;
+};
+
+// Helper: Increment AI generation counter
+const incrementAIUsage = async (userId) => {
+  await User.findByIdAndUpdate(userId, { $inc: { aiGenerationsUsed: 1 } });
+};
 
 // @desc    Generate eBook outline (chapters list)
 // @route   POST /api/ai/generate-outline
@@ -15,6 +51,10 @@ const generateOutline = async (req, res) => {
   if (!title) {
     return res.status(400).json({ message: "Book title is required" });
   }
+
+  // Check AI limits
+  const user = await checkAILimit(req, res);
+  if (!user) return;
 
   // If no API Key is set, return mock fallback outline
   if (!ai) {
@@ -44,6 +84,7 @@ const generateOutline = async (req, res) => {
         summary: "Preparing drafts for public reviews, exporting to high-quality PDF/EPUB formats, and final packaging checks.",
       },
     ];
+    await incrementAIUsage(user._id);
     return res.json({ chapters: mockOutline });
   }
 
@@ -80,6 +121,7 @@ The JSON array must have this structure:
 
     try {
       const chapters = JSON.parse(text);
+      await incrementAIUsage(user._id);
       res.json({ chapters });
     } catch (parseErr) {
       console.error("Gemini output JSON parse error. Text raw:", text, parseErr);
@@ -104,6 +146,10 @@ const generateChapter = async (req, res) => {
     return res.status(400).json({ message: "Book title and chapter title are required" });
   }
 
+  // Check AI limits
+  const user = await checkAILimit(req, res);
+  if (!user) return;
+
   // If no API Key is set, return mock fallback chapter text
   if (!ai) {
     console.log("GEMINI_API_KEY not configured. Returning mock chapter draft fallback.");
@@ -120,6 +166,7 @@ const generateChapter = async (req, res) => {
 
 <p>Finally, packaging your chapters for final document exports completes the writing lifecycle. Exporting to high-resolution formats like PDF and EPUB requires clean outline compilation, metadata verification, and layout alignment. In the coming segments, we will detail how this publishing pipeline behaves.</p>`;
 
+    await incrementAIUsage(user._id);
     return res.json({ content: mockBody });
   }
 
@@ -143,6 +190,7 @@ Start writing now:`;
       contents: prompt,
     });
 
+    await incrementAIUsage(user._id);
     res.json({ content: response.text });
   } catch (error) {
     console.error("AI Generate chapter error:", error);
@@ -159,6 +207,10 @@ const editText = async (req, res) => {
   if (!action || !text) {
     return res.status(400).json({ message: "Action and text are required" });
   }
+
+  // Check AI limits
+  const user = await checkAILimit(req, res);
+  if (!user) return;
 
   // If no API Key is set, return mock editing fallback
   if (!ai) {
@@ -180,6 +232,7 @@ const editText = async (req, res) => {
     } else if (action === "chat") {
       result = `<h4>AI Assistant Response:</h4>\n<p>Based on your query "<strong>${instruction}</strong>", here is an expansion block:</p>\n<ul>\n  <li><strong>Core Objective</strong>: Focus on clean visual structures.</li>\n  <li><strong>Writing Style</strong>: Consistent guidelines improve readability.</li>\n</ul>`;
     }
+    await incrementAIUsage(user._id);
     return res.json({ content: result });
   }
 
@@ -212,6 +265,7 @@ Provide your answer directly, formatted as clean HTML (with headings, paragraphs
       contents: prompt,
     });
 
+    await incrementAIUsage(user._id);
     res.json({ content: response.text });
   } catch (error) {
     console.error("AI Edit text error:", error);
@@ -219,8 +273,75 @@ Provide your answer directly, formatted as clean HTML (with headings, paragraphs
   }
 };
 
+// @desc    Generate AI cover image using Pollinations.ai
+// @route   POST /api/ai/generate-cover
+// @access  Private
+const generateCoverImage = async (req, res) => {
+  const { prompt } = req.body;
+
+  if (!prompt || !prompt.trim()) {
+    return res.status(400).json({ message: "A cover description prompt is required" });
+  }
+
+  // Check AI limits
+  const user = await checkAILimit(req, res);
+  if (!user) return;
+
+  try {
+    // Build the Pollinations.ai image generation URL
+    const seed = Math.floor(Math.random() * 100000);
+    const enhancedPrompt = `Professional book cover art, high quality, editorial design: ${prompt}`;
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=600&height=800&enhance=true&seed=${seed}&nologo=true`;
+
+    // Download the image from Pollinations
+    const fileName = `cover-${Date.now()}-${seed}.jpg`;
+    const filePath = path.join(coversDir, fileName);
+
+    await new Promise((resolve, reject) => {
+      const fetchImage = (url, redirectCount = 0) => {
+        if (redirectCount > 5) {
+          return reject(new Error("Too many redirects"));
+        }
+        const client = url.startsWith("https") ? https : http;
+        client.get(url, (response) => {
+          // Follow redirects
+          if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
+            return fetchImage(response.headers.location, redirectCount + 1);
+          }
+          if (response.statusCode !== 200) {
+            return reject(new Error(`Image fetch failed with status ${response.statusCode}`));
+          }
+          const fileStream = fs.createWriteStream(filePath);
+          response.pipe(fileStream);
+          fileStream.on("finish", () => {
+            fileStream.close();
+            resolve();
+          });
+          fileStream.on("error", reject);
+        }).on("error", reject);
+      };
+      fetchImage(imageUrl);
+    });
+
+    // Increment AI usage
+    await incrementAIUsage(user._id);
+
+    // Return the local server URL for the saved cover
+    const serverUrl = `http://localhost:${process.env.PORT || 5000}/Backend/uploads/covers/${fileName}`;
+    
+    res.json({
+      imageUrl: serverUrl,
+      message: "AI cover image generated successfully",
+    });
+  } catch (error) {
+    console.error("AI Cover generation error:", error);
+    res.status(500).json({ message: "AI Cover image generation failed", error: error.message });
+  }
+};
+
 module.exports = {
   generateOutline,
   generateChapter,
   editText,
+  generateCoverImage,
 };

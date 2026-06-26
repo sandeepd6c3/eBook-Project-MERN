@@ -75,6 +75,10 @@ const userSchema = new mongoose.Schema(
             type: Date,
             default: null,
         },
+        aiGenerationsUsed: {
+            type: Number,
+            default: 0,
+        },
     },
     {
         timestamps: true,
