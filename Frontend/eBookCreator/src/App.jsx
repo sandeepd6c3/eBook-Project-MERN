@@ -11,6 +11,7 @@ import ProfilePage from './pages/ProfilePage'
 import ViewBookPage from './pages/ViewBookPage'
 import DiscoverPage from './pages/DiscoverPage'
 import PricingPage from './pages/PricingPage'
+import AnalyticsPage from './pages/AnalyticsPage'
 
 
 import ThemeSwitcher from './components/ui/ThemeSwitcher'
@@ -71,6 +72,14 @@ const App = () => {
           element={
             <ProtectedRouts>
               <ViewBookPage />
+            </ProtectedRouts>
+          }
+        />
+        <Route
+          path="/analytics"
+          element={
+            <ProtectedRouts>
+              <AnalyticsPage />
             </ProtectedRouts>
           }
         />

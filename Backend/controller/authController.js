@@ -70,6 +70,8 @@ const loginUser = async (req, res) => {
                 username: user.username,
                 email: user.email,
                 role: user.role,
+                subscriptionTier: user.subscriptionTier,
+                aiGenerationsUsed: user.aiGenerationsUsed,
                 token: generateToken(user._id),
             });
         } else {
@@ -99,6 +101,8 @@ const getUserProfile = async (req, res) => {
                 streak: user.streak,
                 avatar: user.avatar,
                 preferredTheme: user.preferredTheme,
+                subscriptionTier: user.subscriptionTier,
+                aiGenerationsUsed: user.aiGenerationsUsed,
                 createdAt: user.createdAt,
             });
         } else {

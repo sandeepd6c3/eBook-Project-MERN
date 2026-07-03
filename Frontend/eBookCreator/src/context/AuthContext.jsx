@@ -109,6 +109,7 @@ export const AuthProvider = ({ children }) => {
         username: data.username,
         email: data.email,
         role: data.role,
+        subscriptionTier: data.subscriptionTier || "free",
       });
       setIsAuthenticated(true);
       return data;
