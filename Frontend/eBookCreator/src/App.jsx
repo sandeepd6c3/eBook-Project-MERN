@@ -1,6 +1,7 @@
 import React from 'react'
 import { Routes, Route } from 'react-router-dom'
 import ProtectedRouts from './components/auth/ProtectedRouts'
+import AdminRoute from './components/auth/AdminRoute'
 import ScrollToTop from './components/layout/ScrollToTop'
 import LoginPage from './pages/LoginPage'
 import LandingPage from './pages/LandingPage'
@@ -11,6 +12,7 @@ import ProfilePage from './pages/ProfilePage'
 import ViewBookPage from './pages/ViewBookPage'
 import DiscoverPage from './pages/DiscoverPage'
 import AnalyticsPage from './pages/AnalyticsPage'
+import AdminPage from './pages/AdminPage'
 
 
 import ThemeSwitcher from './components/ui/ThemeSwitcher'
@@ -73,6 +75,14 @@ const App = () => {
             <ProtectedRouts>
               <AnalyticsPage />
             </ProtectedRouts>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminPage />
+            </AdminRoute>
           }
         />
       </Routes>

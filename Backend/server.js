@@ -33,6 +33,7 @@ const bookRoutes = require("./routes/bookRoutes");
 const aiRoutes = require("./routes/aiRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 
 // Mount routes
 app.use("/api/auth", authRoutes);
@@ -40,6 +41,7 @@ app.use("/api/books", bookRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Connect to the database, then start the server
 connectDB()

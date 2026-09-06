@@ -451,6 +451,15 @@ const DashboardPage = () => {
               <Link to="/profile" className="hover:text-text-primary transition-colors py-1">
                 Profile
               </Link>
+              {user?.role === "admin" && (
+                <Link
+                  to="/admin"
+                  className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold border border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1"
+                >
+                  <span>🛡️</span>
+                  <span>Admin</span>
+                </Link>
+              )}
             </nav>
           </div>
 
@@ -482,9 +491,21 @@ const DashboardPage = () => {
                   onMouseLeave={() => setProfileDropdownOpen(false)}
                 >
                   <div className="px-3 py-2 border-b border-border-primary mb-1">
-                    <span className="font-semibold block truncate text-text-primary">{user?.username || "User"}</span>
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-semibold block truncate text-text-primary">{user?.username || "User"}</span>
+                      {user?.role === "admin" && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                          ADMIN
+                        </span>
+                      )}
+                    </div>
                     <span className="text-[10px] text-text-muted truncate block">{user?.email || "Signed in"}</span>
                   </div>
+                  {user?.role === "admin" && (
+                    <Link to="/admin" className="block px-3 py-1.5 text-amber-600 dark:text-amber-400 font-semibold hover:bg-amber-500/10">
+                      🛡️ Admin Console
+                    </Link>
+                  )}
                   <Link to="/profile" className="block px-3 py-1.5 text-text-secondary hover:bg-bg-secondary hover:text-text-primary">
                     Profile Settings
                   </Link>
