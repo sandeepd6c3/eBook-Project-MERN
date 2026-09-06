@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useGoogleLogin } from "@react-oauth/google";
 import InputField from "../components/ui/InputField";
 import Button from "../components/ui/Button";
 import Modal from "../components/ui/Modal";
 import toast from "react-hot-toast";
 
 const SignUpPage = () => {
-  const { register, googleLogin } = useAuth();
+  const { register, googleLogin, sendOTP, verifyOTP } = useAuth();
   const navigate = useNavigate();
 
   // Form State
-  const [authMethod, setAuthMethod] = useState("email"); // "email" | "mobile"
+  // authMethod: "otp_email" | "otp_mobile" | "password_email"
+  const [authMethod, setAuthMethod] = useState("otp_email"); 
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -27,6 +29,7 @@ const SignUpPage = () => {
   const [timer, setTimer] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [generatedDemoOtp, setGeneratedDemoOtp] = useState("");
 
   // Countdown timer for OTP resending
   useEffect(() => {
@@ -48,53 +51,56 @@ const SignUpPage = () => {
     email: "",
   });
 
-  // Dynamically load Google Identity Services script
-  useEffect(() => {
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-    if (clientId && clientId !== "YOUR_GOOGLE_CLIENT_ID") {
-      const script = document.createElement("script");
-      script.src = "https://accounts.google.com/gsi/client";
-      script.async = true;
-      script.defer = true;
-      script.onload = () => {
-        if (window.google) {
-          window.google.accounts.id.initialize({
-            client_id: clientId,
-            callback: handleGoogleCredentialResponse,
-          });
-        }
-      };
-      document.body.appendChild(script);
-      return () => {
-        document.body.removeChild(script);
-      };
-    }
-  }, []);
+  // Native Google OAuth login flow (token / code response)
+  const triggerGoogleOAuth = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setLoading(true);
+      const toastId = toast.loading("Connecting to Google Account...");
+      try {
+        const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: {
+            Authorization: `Bearer ${tokenResponse.access_token}`,
+          },
+        });
 
-  const handleGoogleCredentialResponse = async (response) => {
-    setLoading(true);
-    const toastId = toast.loading("Connecting to Google...");
-    try {
-      await googleLogin({ token: response.credential });
-      toast.success("Registered with Google successfully!", { id: toastId });
-      navigate("/dashboard");
-    } catch (err) {
-      toast.error(err.message || "Google registration failed", { id: toastId });
-    } finally {
-      setLoading(false);
-    }
-  };
+        if (userInfoRes.ok) {
+          const profile = await userInfoRes.json();
+          await googleLogin({
+            isMock: true,
+            mockPayload: {
+              email: profile.email,
+              name: profile.name || profile.given_name || profile.email.split("@")[0],
+              picture: profile.picture || "",
+            },
+          });
+          toast.success("Signed in with Google successfully!", { id: toastId });
+          navigate("/dashboard");
+        } else {
+          throw new Error("Could not retrieve Google profile.");
+        }
+      } catch (err) {
+        console.error("Google Auth error:", err);
+        toast.error(err.message || "Google Sign-Up failed", { id: toastId });
+      } finally {
+        setLoading(false);
+      }
+    },
+    onError: (errorResponse) => {
+      console.warn("Google OAuth popup failed or cancelled, opening simulation modal:", errorResponse);
+      setShowGoogleMockModal(true);
+    },
+  });
 
   const handleMockGoogleLogin = async (mockData) => {
     setLoading(true);
     setShowGoogleMockModal(false);
-    const toastId = toast.loading("Simulating Google OAuth...");
+    const toastId = toast.loading("Registering via Google Account...");
     try {
       await googleLogin({ isMock: true, mockPayload: mockData });
-      toast.success("Successfully registered via Google Demo!", { id: toastId });
+      toast.success("Successfully registered via Google!", { id: toastId });
       navigate("/dashboard");
     } catch (err) {
-      toast.error(err.message || "Mock Google registration failed", { id: toastId });
+      toast.error(err.message || "Google registration failed", { id: toastId });
     } finally {
       setLoading(false);
     }
@@ -104,7 +110,6 @@ const SignUpPage = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear errors when user types
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
@@ -124,6 +129,7 @@ const SignUpPage = () => {
     }));
     setOtpSent(false);
     setTimer(0);
+    setGeneratedDemoOtp("");
     setShowPassword(false);
     setShowConfirmPassword(false);
   };
@@ -136,7 +142,7 @@ const SignUpPage = () => {
       newErrors.fullName = "Please enter your name";
     }
 
-    if (authMethod === "email") {
+    if (authMethod === "password_email" || authMethod === "otp_email") {
       const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
       if (!formData.email.trim()) {
         newErrors.email = "Please enter your email";
@@ -144,30 +150,31 @@ const SignUpPage = () => {
         newErrors.email = "Please enter a valid email address";
       }
 
-      if (!formData.password) {
-        newErrors.password = "Please enter a password";
-      } else if (formData.password.length < 6) {
-        newErrors.password = "Password must be at least 6 characters long";
-      }
+      if (authMethod === "password_email") {
+        if (!formData.password) {
+          newErrors.password = "Please enter a password";
+        } else if (formData.password.length < 6) {
+          newErrors.password = "Password must be at least 6 characters long";
+        }
 
-      if (formData.password !== formData.confirmPassword) {
-        newErrors.confirmPassword = "Passwords do not match";
+        if (formData.password !== formData.confirmPassword) {
+          newErrors.confirmPassword = "Passwords do not match";
+        }
       }
     } else {
-      // Mobile number validation (10-12 digits)
       const cleanPhone = formData.mobileNumber.replace(/[\s\-\+]/g, "");
       if (!formData.mobileNumber.trim()) {
         newErrors.mobileNumber = "Please enter your mobile number";
       } else if (!/^[0-9]{10,12}$/.test(cleanPhone)) {
         newErrors.mobileNumber = "Enter a valid 10-12 digit mobile number";
       }
+    }
 
-      if (otpSent) {
-        if (!formData.otpCode.trim()) {
-          newErrors.otpCode = "Please enter the verification code";
-        } else if (formData.otpCode.trim().length !== 6) {
-          newErrors.otpCode = "OTP must be exactly 6 digits";
-        }
+    if (otpSent) {
+      if (!formData.otpCode.trim()) {
+        newErrors.otpCode = "Please enter the 6-digit OTP code";
+      } else if (formData.otpCode.trim().length !== 6) {
+        newErrors.otpCode = "OTP must be exactly 6 digits";
       }
     }
 
@@ -175,17 +182,31 @@ const SignUpPage = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Send Mobile OTP
-  const handleSendOTP = () => {
+  // Send OTP
+  const handleSendOTP = async () => {
+    const isEmail = authMethod === "otp_email";
+    const identifier = isEmail ? formData.email.trim() : formData.mobileNumber.trim();
+    const type = isEmail ? "email" : "mobile";
+
     const newErrors = {};
     if (!formData.fullName.trim()) {
       newErrors.fullName = "Please enter your name";
     }
-    const cleanPhone = formData.mobileNumber.replace(/[\s\-\+]/g, "");
-    if (!formData.mobileNumber.trim()) {
-      newErrors.mobileNumber = "Please enter your mobile number";
-    } else if (!/^[0-9]{10,12}$/.test(cleanPhone)) {
-      newErrors.mobileNumber = "Enter a valid 10-12 digit mobile number";
+
+    if (isEmail) {
+      const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+      if (!identifier) {
+        newErrors.email = "Please enter your email address";
+      } else if (!emailRegex.test(identifier)) {
+        newErrors.email = "Please enter a valid email address";
+      }
+    } else {
+      const cleanPhone = identifier.replace(/[\s\-\+]/g, "");
+      if (!identifier) {
+        newErrors.mobileNumber = "Please enter your mobile number";
+      } else if (!/^[0-9]{10,12}$/.test(cleanPhone)) {
+        newErrors.mobileNumber = "Enter a valid 10-12 digit mobile number";
+      }
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -194,17 +215,23 @@ const SignUpPage = () => {
     }
 
     setLoading(true);
-    const toastId = toast.loading("Sending verification code...");
+    const toastId = toast.loading(`Sending OTP to ${identifier}...`);
 
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const res = await sendOTP(identifier, type);
       setOtpSent(true);
       setTimer(60);
-      toast.success("OTP sent successfully! Use code 123456 for testing.", {
-        id: toastId,
-        duration: 8000,
-      });
-    }, 1000);
+      if (res.otp) {
+        setGeneratedDemoOtp(res.otp);
+        // Autofill for smooth testing UX or manual entry
+        setFormData(prev => ({ ...prev, otpCode: res.otp }));
+      }
+      toast.success(res.message || "OTP code sent successfully!", { id: toastId, duration: 6000 });
+    } catch (err) {
+      toast.error(err.message || "Failed to send OTP. Please try again.", { id: toastId });
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Submit Handler
@@ -212,31 +239,28 @@ const SignUpPage = () => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    if (authMethod === "mobile" && !otpSent) {
+    if ((authMethod === "otp_email" || authMethod === "otp_mobile") && !otpSent) {
       handleSendOTP();
       return;
     }
 
     setLoading(true);
-    const toastId = toast.loading("Creating your account...");
+    const toastId = toast.loading("Creating your account & signing in...");
 
     try {
-      if (authMethod === "email") {
+      if (authMethod === "password_email") {
         await register(formData.fullName, formData.email, formData.password);
       } else {
-        if (formData.otpCode.trim() !== "123456") {
-          throw new Error("Invalid OTP code. Please use 123456 for testing.");
-        }
-        
-        const mappedEmail = `${formData.mobileNumber.trim()}@mobile.com`;
-        const defaultPassword = "OTP_Verified_Session_Secure_123!";
-        await register(formData.fullName, mappedEmail, defaultPassword);
+        const isEmail = authMethod === "otp_email";
+        const identifier = isEmail ? formData.email.trim() : formData.mobileNumber.trim();
+        const type = isEmail ? "email" : "mobile";
+        await verifyOTP(identifier, formData.otpCode.trim(), type, formData.fullName.trim());
       }
 
       toast.success("Account created successfully!", { id: toastId });
       navigate("/dashboard");
     } catch (err) {
-      toast.error(err.message || "Registration failed. Please try again.", {
+      toast.error(err.message || "Registration failed. Please check the code.", {
         id: toastId,
       });
     } finally {
@@ -244,14 +268,20 @@ const SignUpPage = () => {
     }
   };
 
+
   const handleGoogleSignIn = () => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-    if (clientId && clientId !== "YOUR_GOOGLE_CLIENT_ID" && window.google) {
-      window.google.accounts.id.prompt();
+    if (clientId && clientId !== "YOUR_GOOGLE_CLIENT_ID" && !clientId.includes("demo.apps.googleusercontent.com")) {
+      try {
+        triggerGoogleOAuth();
+      } catch (err) {
+        setShowGoogleMockModal(true);
+      }
     } else {
       setShowGoogleMockModal(true);
     }
   };
+
 
   return (
     <div className="min-h-screen w-full bg-bg-tertiary flex items-center justify-center p-4 sm:p-6 font-sans transition-colors duration-250">
@@ -271,6 +301,43 @@ const SignUpPage = () => {
             <p className="text-text-secondary text-xs mt-2 font-medium">
               Welcome! Please enter your details
             </p>
+          </div>
+
+          {/* Auth Method Selector Tabs */}
+          <div className="w-full flex items-center bg-bg-secondary p-1 rounded-xl border border-border-primary mb-6">
+            <button
+              type="button"
+              onClick={() => handleTabChange("otp_email")}
+              className={`flex-1 py-2 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                authMethod === "otp_email"
+                  ? "bg-bg-primary text-brand-purple shadow-sm border border-border-primary/50"
+                  : "text-text-muted hover:text-text-primary"
+              }`}
+            >
+              Email OTP
+            </button>
+            <button
+              type="button"
+              onClick={() => handleTabChange("otp_mobile")}
+              className={`flex-1 py-2 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                authMethod === "otp_mobile"
+                  ? "bg-bg-primary text-brand-purple shadow-sm border border-border-primary/50"
+                  : "text-text-muted hover:text-text-primary"
+              }`}
+            >
+              Mobile OTP
+            </button>
+            <button
+              type="button"
+              onClick={() => handleTabChange("password_email")}
+              className={`flex-1 py-2 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                authMethod === "password_email"
+                  ? "bg-bg-primary text-brand-purple shadow-sm border border-border-primary/50"
+                  : "text-text-muted hover:text-text-primary"
+              }`}
+            >
+              Password
+            </button>
           </div>
 
           {/* Registration Form */}
@@ -300,33 +367,89 @@ const SignUpPage = () => {
               )}
             </div>
 
-            {authMethod === "email" ? (
-              <>
-                {/* Email Address */}
-                <div className="w-full flex flex-col items-start gap-1">
-                  <label className="text-[12px] font-bold text-text-primary">
-                    Email
-                  </label>
+            {/* Email Address (Visible for otp_email and password_email) */}
+            {(authMethod === "otp_email" || authMethod === "password_email") && (
+              <div className="w-full flex flex-col items-start gap-1">
+                <label className="text-[12px] font-bold text-text-primary">
+                  Email Address
+                </label>
+                <div className="w-full relative">
                   <input
                     type="email"
                     name="email"
-                    placeholder="john@example.com"
+                    placeholder="name@company.com"
                     value={formData.email}
                     onChange={handleChange}
-                    disabled={loading}
-                    className={`w-full h-[46px] px-4 bg-bg-secondary text-text-primary border ${
+                    disabled={loading || otpSent}
+                    className={`w-full h-[46px] pl-4 pr-16 bg-bg-secondary text-text-primary border ${
                       errors.email ? "border-red-400 focus:border-red-500 focus:ring-red-200/30" : "border-border-primary focus:border-brand-purple focus:ring-brand-purple/20"
                     } rounded-[10px] text-xs font-sans placeholder-text-muted focus:ring-1 outline-none transition-all duration-300 disabled:bg-bg-tertiary disabled:text-text-muted`}
                     required
                   />
-                  {errors.email && (
-                    <p className="text-[10px] text-red-500 font-medium mt-1 pl-1">
-                      {errors.email}
-                    </p>
+                  {otpSent && authMethod === "otp_email" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOtpSent(false);
+                        setTimer(0);
+                      }}
+                      className="absolute right-3.5 top-[50%] -translate-y-[50%] text-[10px] font-bold text-text-muted hover:text-text-primary transition-colors uppercase tracking-wider cursor-pointer"
+                    >
+                      Change
+                    </button>
                   )}
                 </div>
+                {errors.email && (
+                  <p className="text-[10px] text-red-500 font-medium mt-1 pl-1">
+                    {errors.email}
+                  </p>
+                )}
+              </div>
+            )}
 
-                {/* Password */}
+            {/* Mobile Number (Visible for otp_mobile) */}
+            {authMethod === "otp_mobile" && (
+              <div className="w-full flex flex-col items-start gap-1">
+                <label className="text-[12px] font-bold text-text-primary">
+                  Mobile Number
+                </label>
+                <div className="w-full relative">
+                  <input
+                    type="tel"
+                    name="mobileNumber"
+                    placeholder="Enter 10-digit mobile number"
+                    value={formData.mobileNumber}
+                    onChange={handleChange}
+                    disabled={loading || otpSent}
+                    className={`w-full h-[46px] pl-4 pr-16 bg-bg-secondary text-text-primary border ${
+                      errors.mobileNumber ? "border-red-400 focus:border-red-500 focus:ring-red-200/30" : "border-border-primary focus:border-brand-purple focus:ring-brand-purple/20"
+                    } rounded-[10px] text-xs font-sans placeholder-text-muted focus:ring-1 outline-none transition-all duration-300 disabled:bg-bg-tertiary disabled:text-text-muted`}
+                    required
+                  />
+                  {otpSent && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOtpSent(false);
+                        setTimer(0);
+                      }}
+                      className="absolute right-3.5 top-[50%] -translate-y-[50%] text-[10px] font-bold text-text-muted hover:text-text-primary transition-colors uppercase tracking-wider cursor-pointer"
+                    >
+                      Change
+                    </button>
+                  )}
+                </div>
+                {errors.mobileNumber && (
+                  <p className="text-[10px] text-red-500 font-medium mt-1 pl-1">
+                    {errors.mobileNumber}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Password Fields (Visible for password_email) */}
+            {authMethod === "password_email" && (
+              <>
                 <div className="w-full flex flex-col items-start gap-1">
                   <label className="text-[12px] font-bold text-text-primary">
                     Password
@@ -368,7 +491,6 @@ const SignUpPage = () => {
                   )}
                 </div>
 
-                {/* Confirm Password */}
                 <div className="w-full flex flex-col items-start gap-1">
                   <label className="text-[12px] font-bold text-text-primary">
                     Confirm Password
@@ -410,91 +532,58 @@ const SignUpPage = () => {
                   )}
                 </div>
               </>
-            ) : (
-              <>
-                {/* Mobile Number */}
-                <div className="w-full flex flex-col items-start gap-1">
+            )}
+
+            {/* OTP Code Input (Visible after OTP is sent) */}
+            {otpSent && (authMethod === "otp_email" || authMethod === "otp_mobile") && (
+              <div className="w-full flex flex-col items-start gap-1 animate-fadeIn">
+                <div className="w-full flex justify-between items-center">
                   <label className="text-[12px] font-bold text-text-primary">
-                    Mobile Number
+                    Verification Code (OTP)
                   </label>
-                  <div className="w-full relative">
-                    <input
-                      type="tel"
-                      name="mobileNumber"
-                      placeholder="Enter mobile number"
-                      value={formData.mobileNumber}
-                      onChange={handleChange}
-                      disabled={loading || otpSent}
-                      className={`w-full h-[46px] pl-4 pr-16 bg-bg-secondary text-text-primary border ${
-                        errors.mobileNumber ? "border-red-400 focus:border-red-500 focus:ring-red-200/30" : "border-border-primary focus:border-brand-purple focus:ring-brand-purple/20"
-                      } rounded-[10px] text-xs font-sans placeholder-text-muted focus:ring-1 outline-none transition-all duration-300 disabled:bg-bg-tertiary disabled:text-text-muted`}
-                      required
-                    />
-                    {otpSent && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOtpSent(false);
-                          setTimer(0);
-                        }}
-                        className="absolute right-3.5 top-[50%] -translate-y-[50%] text-[10px] font-bold text-text-muted hover:text-text-primary transition-colors uppercase tracking-wider cursor-pointer"
-                      >
-                        Change
-                      </button>
-                    )}
-                  </div>
-                  {errors.mobileNumber && (
-                    <p className="text-[10px] text-red-500 font-medium mt-1 pl-1">
-                      {errors.mobileNumber}
-                    </p>
+                  {generatedDemoOtp && (
+                    <span className="text-[10px] text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-400 font-mono font-bold px-2 py-0.5 rounded">
+                      Code: {generatedDemoOtp}
+                    </span>
                   )}
                 </div>
-
-                {/* OTP Code (Visible after Send OTP) */}
-                {otpSent && (
-                  <div className="w-full flex flex-col items-start gap-1 animate-fadeIn">
-                    <label className="text-[12px] font-bold text-text-primary">
-                      Verification Code (OTP)
-                    </label>
-                    <input
-                      type="text"
-                      name="otpCode"
-                      placeholder="Enter 6-digit OTP"
-                      maxLength={6}
-                      value={formData.otpCode}
-                      onChange={handleChange}
-                      disabled={loading}
-                      className={`w-full h-[46px] px-4 bg-bg-secondary text-text-primary border ${
-                        errors.otpCode ? "border-red-400 focus:border-red-500 focus:ring-red-200/30" : "border-border-primary focus:border-brand-purple focus:ring-brand-purple/20"
-                      } rounded-[10px] text-xs font-sans placeholder-text-muted focus:ring-1 outline-none transition-all duration-300 disabled:bg-bg-tertiary disabled:text-text-muted`}
-                      required
-                    />
-                    {errors.otpCode && (
-                      <p className="text-[10px] text-red-500 font-medium mt-1 pl-1">
-                        {errors.otpCode}
-                      </p>
-                    )}
-                    <div className="flex justify-between items-center w-full mt-2 px-1">
-                      <span className="text-[10px] text-text-muted font-medium">
-                        Testing code: <strong className="text-text-secondary font-bold">123456</strong>
-                      </span>
-                      {timer > 0 ? (
-                        <span className="text-[10px] text-text-muted font-medium">
-                          Resend in {timer}s
-                        </span>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={handleSendOTP}
-                          className="text-[10px] font-bold text-text-primary hover:underline tracking-wide cursor-pointer"
-                        >
-                          Resend OTP
-                        </button>
-                      )}
-                    </div>
-                  </div>
+                <input
+                  type="text"
+                  name="otpCode"
+                  placeholder="Enter 6-digit OTP code"
+                  maxLength={6}
+                  value={formData.otpCode}
+                  onChange={handleChange}
+                  disabled={loading}
+                  className={`w-full h-[46px] px-4 bg-bg-secondary text-text-primary border ${
+                    errors.otpCode ? "border-red-400 focus:border-red-500 focus:ring-red-200/30" : "border-border-primary focus:border-brand-purple focus:ring-brand-purple/20"
+                  } rounded-[10px] text-xs font-sans placeholder-text-muted focus:ring-1 outline-none transition-all duration-300 disabled:bg-bg-tertiary disabled:text-text-muted`}
+                  required
+                />
+                {errors.otpCode && (
+                  <p className="text-[10px] text-red-500 font-medium mt-1 pl-1">
+                    {errors.otpCode}
+                  </p>
                 )}
-              </>
+                <div className="flex justify-between items-center w-full mt-2 px-1">
+                  <span className="text-[10px] text-text-muted font-medium">
+                    Valid for 5 minutes
+                  </span>
+                  {timer > 0 ? (
+                    <span className="text-[10px] text-text-muted font-medium">
+                      Resend in {timer}s
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleSendOTP}
+                      className="text-[10px] font-bold text-brand-purple hover:underline tracking-wide cursor-pointer"
+                    >
+                      Resend OTP
+                    </button>
+                  )}
+                </div>
+              </div>
             )}
 
             {/* Submit Button */}
@@ -506,71 +595,40 @@ const SignUpPage = () => {
             >
               {loading ? (
                 <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-              ) : authMethod === "mobile" && !otpSent ? (
-                "Send Verification Code"
+              ) : (authMethod === "otp_email" || authMethod === "otp_mobile") && !otpSent ? (
+                `Send ${authMethod === "otp_email" ? "Email" : "Mobile"} OTP`
               ) : (
-                "Create Account"
+                "Create Account & Verify"
               )}
             </Button>
           </form>
 
           {/* Or Continue With Divider */}
-          {!otpSent && (
-            <>
-              <div className="w-full flex items-center gap-3 my-6">
-                <div className="flex-1 h-[1px] bg-border-primary"></div>
-                <span className="text-[10px] font-semibold text-text-muted">
-                  Or Continue With
-                </span>
-                <div className="flex-1 h-[1px] bg-border-primary"></div>
-              </div>
+          <div className="w-full flex items-center gap-3 my-6">
+            <div className="flex-1 h-[1px] bg-border-primary"></div>
+            <span className="text-[10px] font-semibold text-text-muted">
+              Or Continue With
+            </span>
+            <div className="flex-1 h-[1px] bg-border-primary"></div>
+          </div>
 
-              {/* OAuth buttons side-by-side: Google & Mob. Num. (or Email) */}
-              <div className="w-full flex gap-3">
-                <button
-                  onClick={handleGoogleSignIn}
-                  type="button"
-                  className="flex-1 h-[48px] border border-border-primary hover:border-text-primary hover:bg-bg-secondary active:scale-[0.99] flex items-center justify-center gap-2 rounded-[10px] transition-all duration-300 cursor-pointer text-text-primary bg-bg-primary"
-                >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24">
-                    <path
-                      fill="#EA4335"
-                      d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.2-5.136 4.2A5.626 5.626 0 0 1 8.35 12.98a5.623 5.623 0 0 1 5.64-5.62c2.44 0 4.5 1.07 5.865 2.78l3.1-3.1C20.9 4.96 17.7 3.36 14 3.36c-5.87 0-10.64 4.77-10.64 10.64S8.13 24.64 14 24.64c5.78 0 10.64-4.8 10.64-10.64 0-.8-.1-1.6-.26-2.36l-12.14-.35z"
-                    />
-                  </svg>
-                  <span className="text-xs font-bold">
-                    Google
-                  </span>
-                </button>
+          {/* Google Sign-in button */}
+          <button
+            onClick={handleGoogleSignIn}
+            type="button"
+            className="w-full h-[48px] border border-border-primary hover:border-text-primary hover:bg-bg-secondary active:scale-[0.99] flex items-center justify-center gap-2 rounded-[10px] transition-all duration-300 cursor-pointer text-text-primary bg-bg-primary"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24">
+              <path
+                fill="#EA4335"
+                d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.2-5.136 4.2A5.626 5.626 0 0 1 8.35 12.98a5.623 5.623 0 0 1 5.64-5.62c2.44 0 4.5 1.07 5.865 2.78l3.1-3.1C20.9 4.96 17.7 3.36 14 3.36c-5.87 0-10.64 4.77-10.64 10.64S8.13 24.64 14 24.64c5.78 0 10.64-4.8 10.64-10.64 0-.8-.1-1.6-.26-2.36l-12.14-.35z"
+              />
+            </svg>
+            <span className="text-xs font-bold">
+              Sign up with Google
+            </span>
+          </button>
 
-                <button
-                  onClick={() => handleTabChange(authMethod === "email" ? "mobile" : "email")}
-                  type="button"
-                  className="flex-1 h-[48px] border border-border-primary hover:border-text-primary hover:bg-bg-secondary active:scale-[0.99] flex items-center justify-center gap-2 rounded-[10px] transition-all duration-300 cursor-pointer text-text-primary bg-bg-primary"
-                >
-                  {authMethod === "email" ? (
-                    <>
-                      <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                      </svg>
-                      <span className="text-xs font-bold">
-                        Mob. Num.
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                      <span className="text-xs font-bold">
-                        Email Sign Up
-                      </span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </>
-          )}
 
           {/* Form Footer Link */}
           <p className="text-[12px] text-text-secondary font-medium text-center w-full mt-8">

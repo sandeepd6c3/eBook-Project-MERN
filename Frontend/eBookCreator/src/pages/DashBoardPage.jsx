@@ -71,12 +71,7 @@ const DashboardPage = () => {
   }, [location, navigate]);
 
   const handleCreateClick = () => {
-    const tier = user?.subscriptionTier || "free";
-    if (tier === "free" && books.length >= 2) {
-      setIsUpgradeModalOpen(true);
-    } else {
-      setIsCreateOpen(true);
-    }
+    setIsCreateOpen(true);
   };
 
   const fetchBooks = async () => {
@@ -345,26 +340,6 @@ const DashboardPage = () => {
             <span className="text-xs font-semibold text-text-secondary hidden sm:inline mr-1">
               Hello, <strong className="text-text-primary">{user?.username || "Sandeep"}</strong>
             </span>
-            <Link
-              to="/pricing"
-              className={`text-[9px] font-extrabold uppercase tracking-wider px-2.5 py-1.5 rounded-lg border cursor-pointer transition-all mr-1 ${
-                user?.subscriptionTier === "pro"
-                  ? "bg-amber-500/10 text-amber-600 border-amber-500/25 hover:bg-amber-500/20"
-                  : user?.subscriptionTier === "premium"
-                    ? "bg-[#8B5CF6]/10 text-[#8B5CF6] border-[#8B5CF6]/25 hover:bg-[#8B5CF6]/20"
-                    : user?.subscriptionTier === "lifetime"
-                      ? "bg-amber-500/15 text-amber-500 border-amber-500/30 hover:bg-amber-500/25"
-                      : "bg-bg-primary text-text-muted border-border-primary hover:bg-bg-tertiary"
-              }`}
-            >
-              {user?.subscriptionTier === "pro"
-                ? "⭐ Pro Plan"
-                : user?.subscriptionTier === "premium"
-                  ? "💎 Premium"
-                  : user?.subscriptionTier === "lifetime"
-                    ? "💎 Lifetime"
-                    : "Free Plan"}
-            </Link>
             <Link
               to="/analytics"
               className="text-[10px] font-bold uppercase tracking-wider text-text-secondary hover:text-text-primary transition-colors border border-border-primary hover:border-text-primary px-3 py-1.5 rounded-lg cursor-pointer mr-1"
@@ -823,35 +798,9 @@ const DashboardPage = () => {
         </div>
       </Modal>
 
-      {/* Upgrade Limit Warning Modal */}
-      <Modal
-        isOpen={isUpgradeModalOpen}
-        onClose={() => setIsUpgradeModalOpen(false)}
-        title="Limit Reached ⚡"
-      >
-        <div className="flex flex-col gap-4 text-left">
-          <p className="text-text-secondary text-xs sm:text-sm font-medium leading-relaxed">
-            You've reached your free plan limit of <strong className="text-text-primary">2 eBooks</strong>. Upgrade to Pro to unlock unlimited publications, AI assistant tools, and EPUB exports.
-          </p>
-          <div className="flex items-center gap-3 mt-4">
-            <button
-              type="button"
-              onClick={() => setIsUpgradeModalOpen(false)}
-              className="flex-1 h-[46px] border border-border-primary hover:border-text-primary text-text-secondary hover:text-text-primary bg-bg-primary text-[10px] font-bold tracking-wider rounded-xl transition-all uppercase cursor-pointer"
-            >
-              Cancel
-            </button>
-            <Link
-              to="/pricing"
-              className="flex-1 h-[46px] bg-[#8B5CF6] hover:bg-[#7c3aed] text-white text-[10px] font-bold tracking-wider rounded-xl transition-all uppercase flex items-center justify-center cursor-pointer shadow-md shadow-[#8B5CF6]/10"
-            >
-              Upgrade to Pro
-            </Link>
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 };
 
 export default DashboardPage;
+

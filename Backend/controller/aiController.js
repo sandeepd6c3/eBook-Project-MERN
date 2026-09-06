@@ -17,25 +17,16 @@ if (!fs.existsSync(coversDir)) {
   fs.mkdirSync(coversDir, { recursive: true });
 }
 
-// FREE_TIER_AI_LIMIT: Maximum AI generations for free users
-const FREE_TIER_AI_LIMIT = 5;
-
-// Helper: Check and enforce AI generation limits for free users
+// Helper: Check and verify user
 const checkAILimit = async (req, res) => {
   const user = await User.findById(req.user._id);
   if (!user) {
     res.status(401).json({ message: "User not found" });
     return null;
   }
-  if (user.subscriptionTier === "free" && user.aiGenerationsUsed >= FREE_TIER_AI_LIMIT) {
-    res.status(403).json({
-      message: "You've reached your free plan limit of 5 AI generations. Upgrade to Pro for unlimited AI access.",
-      limitReached: true,
-    });
-    return null;
-  }
   return user;
 };
+
 
 // Helper: Increment AI generation counter
 const incrementAIUsage = async (userId) => {

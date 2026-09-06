@@ -325,18 +325,10 @@ const AnalyticsPage = () => {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-sm font-display font-semibold text-text-primary">AI Usage</h3>
-                <p className="text-[10px] text-text-muted mt-0.5">Generation credits tracker</p>
+                <p className="text-[10px] text-text-muted mt-0.5">Total AI Generation requests</p>
               </div>
-              <span
-                className={`text-[8px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
-                  data?.subscriptionTier === "pro"
-                    ? "bg-amber-500/10 text-amber-500 border-amber-500/25"
-                    : data?.subscriptionTier === "premium" || data?.subscriptionTier === "lifetime"
-                      ? "bg-[#8B5CF6]/10 text-[#8B5CF6] border-[#8B5CF6]/25"
-                      : "bg-bg-tertiary text-text-muted border-border-primary"
-                }`}
-              >
-                {data?.subscriptionTier?.toUpperCase() || "FREE"}
+              <span className="text-[8px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full border bg-accent-primary/10 text-accent-primary border-accent-primary/20">
+                ACTIVE
               </span>
             </div>
 
@@ -344,43 +336,12 @@ const AnalyticsPage = () => {
             <div className="text-center my-4 flex-1 flex flex-col items-center justify-center">
               <p className="text-5xl font-display font-bold text-accent-primary tracking-tight">{aiUsed}</p>
               <p className="text-[10px] text-text-muted mt-1 font-semibold">
-                {aiLimit === -1 ? "Unlimited generations" : `of ${aiLimit} generations used`}
+                Total AI generations utilized
               </p>
             </div>
-
-            {/* Progress bar */}
-            {aiLimit !== -1 && (
-              <div className="mb-4">
-                <div className="w-full h-2.5 bg-bg-tertiary rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-1000 ease-out"
-                    style={{
-                      width: `${aiPercent}%`,
-                      background: aiPercent >= 80
-                        ? "linear-gradient(90deg, #EF4444, #DC2626)"
-                        : aiPercent >= 50
-                          ? "linear-gradient(90deg, #F59E0B, #D97706)"
-                          : "linear-gradient(90deg, #8B5CF6, #7C3AED)",
-                    }}
-                  />
-                </div>
-                <div className="flex justify-between mt-1.5">
-                  <span className="text-[8px] text-text-muted font-mono">{aiUsed} used</span>
-                  <span className="text-[8px] text-text-muted font-mono">{aiLimit - aiUsed} remaining</span>
-                </div>
-              </div>
-            )}
-
-            {data?.subscriptionTier === "free" && (
-              <Link
-                to="/pricing"
-                className="w-full text-center py-2.5 bg-accent-primary hover:bg-accent-hover text-white text-[9px] font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer block"
-              >
-                ⚡ Upgrade for Unlimited
-              </Link>
-            )}
           </div>
         </div>
+
 
         {/* Second Row: Category Distribution + Quick Stats */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">

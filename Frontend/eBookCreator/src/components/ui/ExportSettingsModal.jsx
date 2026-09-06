@@ -37,30 +37,6 @@ const ExportSettingsModal = ({ isOpen, onClose, exportConfig, onSave, onExport }
   if (!isOpen) return null;
 
   const handleChange = (key, value) => {
-    const tier = user?.subscriptionTier || "free";
-    const isPremium = ["premium", "lifetime"].includes(tier);
-
-    if (key === "pageSize" && ["a5", "pocket"].includes(value) && !isPremium) {
-      setUpgradeMessage("Upgrade to Premium to unlock pocket book formats, A5 digests, and professional publication layouts.");
-      setTargetTier("premium");
-      setIsUpgradeModalOpen(true);
-      return;
-    }
-
-    if (key === "marginStyle" && value === "custom" && !isPremium) {
-      setUpgradeMessage("Upgrade to Premium to unlock custom margins, premium layout styles, and advanced templates.");
-      setTargetTier("premium");
-      setIsUpgradeModalOpen(true);
-      return;
-    }
-
-    if (key === "fontFamily" && ["Playfair Display", "Outfit", "Inter"].includes(value) && !isPremium) {
-      setUpgradeMessage("Upgrade to Premium to unlock editorial typography including Outfit, Inter, and Playfair Display.");
-      setTargetTier("premium");
-      setIsUpgradeModalOpen(true);
-      return;
-    }
-
     setConfig((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -80,15 +56,9 @@ const ExportSettingsModal = ({ isOpen, onClose, exportConfig, onSave, onExport }
   };
 
   const handleExportClick = (format) => {
-    const tier = user?.subscriptionTier || "free";
-    if (format !== "pdf" && tier === "free") {
-      setUpgradeMessage("Upgrade to Pro to export your eBooks as EPUB, DOCX, and Markdown files.");
-      setTargetTier("pro");
-      setIsUpgradeModalOpen(true);
-      return;
-    }
     onExport(format, config);
   };
+
 
   // Maps for font styling in preview
   const fontClassMap = {
@@ -544,19 +514,19 @@ const ExportSettingsModal = ({ isOpen, onClose, exportConfig, onSave, onExport }
               onClick={() => handleExportClick("epub")}
               className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer border-none shadow-xs"
             >
-              {user?.subscriptionTier === "free" ? "🔒 EPUB" : "📕 EPUB"}
+              📕 EPUB
             </button>
             <button
               onClick={() => handleExportClick("docx")}
               className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer border-none shadow-xs"
             >
-              {user?.subscriptionTier === "free" ? "🔒 DOCX" : "🟦 DOCX"}
+              🟦 DOCX
             </button>
             <button
               onClick={() => handleExportClick("markdown")}
               className="px-3.5 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer border-none shadow-xs"
             >
-              {user?.subscriptionTier === "free" ? "🔒 Markdown" : "📝 Markdown"}
+              📝 Markdown
             </button>
             <div className="w-px h-5 bg-border-primary mx-1"></div>
             <Button
@@ -571,35 +541,9 @@ const ExportSettingsModal = ({ isOpen, onClose, exportConfig, onSave, onExport }
 
       </div>
 
-      <Modal
-        isOpen={isUpgradeModalOpen}
-        onClose={() => setIsUpgradeModalOpen(false)}
-        title={targetTier === "premium" ? "Unlock Premium Styling ✨" : "Unlock Pro Export Formats ⚡"}
-      >
-        <div className="flex flex-col gap-4 text-left">
-          <p className="text-text-secondary text-xs sm:text-sm font-medium leading-relaxed">
-            {upgradeMessage}
-          </p>
-          <div className="flex items-center gap-3 mt-4">
-            <button
-              type="button"
-              onClick={() => setIsUpgradeModalOpen(false)}
-              className="flex-1 h-[46px] border border-border-primary hover:border-text-primary text-text-secondary hover:text-text-primary bg-bg-primary text-[10px] font-bold tracking-wider rounded-xl transition-all uppercase cursor-pointer"
-            >
-              Cancel
-            </button>
-            <Link
-              to="/pricing"
-              className="flex-1 h-[46px] bg-[#8B5CF6] hover:bg-[#7c3aed] text-white text-[10px] font-bold tracking-wider rounded-xl transition-all uppercase flex items-center justify-center cursor-pointer shadow-md shadow-[#8B5CF6]/10"
-            >
-              Upgrade to {targetTier === "premium" ? "Premium" : "Pro"}
-            </Link>
-          </div>
-        </div>
-      </Modal>
-
     </div>
   );
 };
 
 export default ExportSettingsModal;
+

@@ -10,7 +10,6 @@ import EditorPage from './pages/EditorPage'
 import ProfilePage from './pages/ProfilePage'
 import ViewBookPage from './pages/ViewBookPage'
 import DiscoverPage from './pages/DiscoverPage'
-import PricingPage from './pages/PricingPage'
 import AnalyticsPage from './pages/AnalyticsPage'
 
 
@@ -52,14 +51,6 @@ const App = () => {
           }
         />
         <Route
-          path="/pricing"
-          element={
-            <ProtectedRouts>
-              <PricingPage />
-            </ProtectedRouts>
-          }
-        />
-        <Route
           path="/discover"
           element={
             <ProtectedRouts>
@@ -67,6 +58,7 @@ const App = () => {
             </ProtectedRouts>
           }
         />
+
         <Route
           path="/view-book/:bookId"
           element={

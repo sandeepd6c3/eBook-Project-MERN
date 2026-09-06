@@ -72,9 +72,10 @@ const Footer = () => {
               <li><a href="#features" className="hover:text-brand-blue transition-colors">AI Outlining</a></li>
               <li><a href="#workflow" className="hover:text-brand-blue transition-colors">Drafting Engine</a></li>
               <li><a href="#tech" className="hover:text-brand-blue transition-colors">Style Locking</a></li>
-              <li><Link to="/signup" className="hover:text-brand-blue transition-colors">Pricing</Link></li>
+              <li><a href="#features" className="hover:text-brand-blue transition-colors">Export Suite</a></li>
             </ul>
           </div>
+
 
           {/* Column 2 */}
           <div>

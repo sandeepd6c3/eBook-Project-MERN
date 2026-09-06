@@ -154,6 +154,65 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Send OTP
+  const sendOTP = async (identifier, type = "email") => {
+    try {
+      const response = await fetch(`${API_BASE}/send-otp`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ identifier, type }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to send OTP");
+      }
+
+      return data;
+    } catch (error) {
+      console.error("sendOTP request failed:", error);
+      throw error;
+    }
+  };
+
+  // Verify OTP and sign in / up
+  const verifyOTP = async (identifier, otp, type = "email", fullName = "") => {
+    try {
+      const response = await fetch(`${API_BASE}/verify-otp`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ identifier, otp, type, fullName }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "OTP Verification failed");
+      }
+
+      // Save token & user state
+      localStorage.setItem("token", data.token);
+      setUser({
+        _id: data._id,
+        username: data.username,
+        email: data.email,
+        role: data.role,
+        avatar: data.avatar || "",
+        preferredTheme: data.preferredTheme || "light",
+      });
+      setIsAuthenticated(true);
+      return data;
+    } catch (error) {
+      console.error("verifyOTP request failed:", error);
+      throw error;
+    }
+  };
+
   // Logout action
   const logout = () => {
     localStorage.removeItem("token");
@@ -171,6 +230,8 @@ export const AuthProvider = ({ children }) => {
         register,
         login,
         googleLogin,
+        sendOTP,
+        verifyOTP,
         logout,
       }}
     >

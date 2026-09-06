@@ -422,16 +422,12 @@ const EditorPage = () => {
 
   const handleGenerateOutline = async () => {
     if (!book) return;
-    if ((user?.subscriptionTier || 'free') === 'free') {
-      setIsOutlineModalOpen(false);
-      setIsUpgradeModalOpen(true);
-      return;
-    }
     setIsOutlineModalOpen(false);
     setGenerationType("outline");
     setGenerationStep(0);
     setIsGenerating(true);
     const token = localStorage.getItem("token");
+
 
     try {
       const response = await fetch(`${API_AI}/generate-outline`, {
@@ -494,12 +490,9 @@ const EditorPage = () => {
 
   const handleDraftWithAI = async () => {
     if (activeChapterIndex === -1 || !book) return;
-    if ((user?.subscriptionTier || 'free') === 'free') {
-      setIsUpgradeModalOpen(true);
-      return;
-    }
 
     const activeCh = book.chapters[activeChapterIndex];
+
     setAiDrafting(true);
     setGenerationType("chapter");
     setGenerationStep(0);
@@ -704,10 +697,6 @@ const EditorPage = () => {
   // AI Copyedit Actions (rewrite, expand, shorten, grammar, tone)
   const handleAIExtension = async (action, toneVal = null) => {
     if (activeChapterIndex === -1 || !book) return;
-    if ((user?.subscriptionTier || 'free') === 'free') {
-      setIsUpgradeModalOpen(true);
-      return;
-    }
 
     const targetText = selectedText || chapterBody;
     if (!targetText.replace(/<[^>]*>/g, "").trim()) {
@@ -737,8 +726,7 @@ const EditorPage = () => {
 
       if (response.status === 403) {
         const errData = await response.json();
-        if (errData.limitReached) { setIsUpgradeModalOpen(true); }
-        else { toast.error(errData.message || "Access denied."); }
+        toast.error(errData.message || "Access denied.");
         return;
       }
       if (!response.ok) throw new Error("AI edit failed");
@@ -763,12 +751,9 @@ const EditorPage = () => {
 
   // AI Chat Submission
   const handleSendAIChat = async (customPrompt = null) => {
-    if ((user?.subscriptionTier || 'free') === 'free') {
-      setIsUpgradeModalOpen(true);
-      return;
-    }
     const query = customPrompt || aiChatInput;
     if (!query.trim()) return;
+
 
     if (!customPrompt) {
       setAiChatInput("");
@@ -2342,33 +2327,6 @@ const EditorPage = () => {
         onSave={handleSaveExportConfig}
         onExport={handleExport}
       />
-
-      <Modal
-        isOpen={isUpgradeModalOpen}
-        onClose={() => setIsUpgradeModalOpen(false)}
-        title="Unlock AI Writing ✨"
-      >
-        <div className="flex flex-col gap-4 text-left">
-          <p className="text-text-secondary text-xs sm:text-sm font-medium leading-relaxed">
-            Upgrade to <strong className="text-text-primary">Pro Plan</strong> to unlock powerful AI outline generation, AI chapter drafting, and the interactive writing assistant.
-          </p>
-          <div className="flex items-center gap-3 mt-4">
-            <button
-              type="button"
-              onClick={() => setIsUpgradeModalOpen(false)}
-              className="flex-1 h-[46px] border border-border-primary hover:border-text-primary text-text-secondary hover:text-text-primary bg-bg-primary text-[10px] font-bold tracking-wider rounded-xl transition-all uppercase cursor-pointer"
-            >
-              Cancel
-            </button>
-            <Link
-              to="/pricing"
-              className="flex-1 h-[46px] bg-[#8B5CF6] hover:bg-[#7c3aed] text-white text-[10px] font-bold tracking-wider rounded-xl transition-all uppercase flex items-center justify-center cursor-pointer shadow-md shadow-[#8B5CF6]/10"
-            >
-              Upgrade to Pro
-            </Link>
-          </div>
-        </div>
-      </Modal>
 
     </div>
   );

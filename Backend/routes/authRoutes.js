@@ -6,6 +6,8 @@ const {
     getUserProfile,
     updateUserProfile,
     googleLogin,
+    sendOTP,
+    verifyOTP,
 } = require("../controller/authController");
 const { protect } = require("../middlewares/authMiddlewares");
 const upload = require("../middlewares/uploadMiddlewares");
@@ -13,7 +15,10 @@ const upload = require("../middlewares/uploadMiddlewares");
 router.post("/register", registerUser);
 router.post("/login", loginUser);
 router.post("/google-login", googleLogin);
+router.post("/send-otp", sendOTP);
+router.post("/verify-otp", verifyOTP);
 router.get("/profile", protect, getUserProfile);
+
 router.put("/profile", protect, updateUserProfile);
 
 // Route to handle avatar uploading

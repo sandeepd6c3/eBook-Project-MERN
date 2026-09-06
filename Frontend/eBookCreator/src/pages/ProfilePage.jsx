@@ -385,32 +385,13 @@ const ProfilePage = () => {
 
         {/* Right Options */}
         <div className="flex items-center gap-3">
-          <Link
-            to="/pricing"
-            className={`text-[9px] font-extrabold uppercase tracking-wider px-2.5 py-1.5 rounded-lg border cursor-pointer transition-all mr-1 ${
-              user?.subscriptionTier === "pro"
-                ? "bg-amber-500/10 text-amber-600 border-amber-500/25 hover:bg-amber-500/20"
-                : user?.subscriptionTier === "premium"
-                  ? "bg-[#8B5CF6]/10 text-[#8B5CF6] border-[#8B5CF6]/25 hover:bg-[#8B5CF6]/20"
-                  : user?.subscriptionTier === "lifetime"
-                    ? "bg-amber-500/15 text-amber-500 border-amber-500/30 hover:bg-amber-500/25"
-                    : "bg-bg-primary text-text-muted border-border-primary hover:bg-bg-tertiary"
-            }`}
-          >
-            {user?.subscriptionTier === "pro"
-              ? "⭐ Pro Plan"
-              : user?.subscriptionTier === "premium"
-                ? "💎 Premium"
-                : user?.subscriptionTier === "lifetime"
-                  ? "💎 Lifetime"
-                  : "Free Plan"}
-          </Link>
           <button
             onClick={() => setActiveTab("Settings")}
             className="h-8 px-4 bg-transparent hover:bg-bg-secondary border border-border-primary hover:border-text-primary text-xs font-bold tracking-wider rounded-lg transition-all text-text-secondary hover:text-text-primary cursor-pointer"
           >
             Edit Profile
           </button>
+
           
           <button
             onClick={() => setActiveTab("Settings")}
@@ -550,66 +531,8 @@ const ProfilePage = () => {
                 </p>
               </div>
 
-              {/* Subscription Details Card */}
-              <div className="bg-bg-secondary border border-border-primary rounded-xl p-5 shadow-xs transition-colors duration-250 flex flex-col gap-4">
-                <div className="flex items-center justify-between pl-0.5">
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-text-muted">
-                    Subscription & Billing
-                  </span>
-                  <span className={`px-2 py-0.5 rounded-full text-[9px] uppercase font-bold tracking-wider ${
-                    user?.subscriptionTier === "pro"
-                      ? "bg-amber-500/10 text-amber-600 border border-amber-500/20"
-                      : user?.subscriptionTier === "premium"
-                        ? "bg-[#8B5CF6]/10 text-[#8B5CF6] border border-[#8B5CF6]/20"
-                        : user?.subscriptionTier === "lifetime"
-                          ? "bg-amber-500/15 text-amber-500 border-amber-500/30"
-                          : "bg-bg-primary text-text-muted border border-border-primary"
-                  }`}>
-                    {user?.subscriptionTier ? user.subscriptionTier.toUpperCase() : "FREE"} PLAN
-                  </span>
-                </div>
-
-                <div className="flex flex-col gap-2 text-[11px] font-semibold text-text-secondary pl-0.5">
-                  <div className="flex justify-between items-center py-0.5">
-                    <span className="opacity-75">Next Billing</span>
-                    <span className="text-text-primary font-mono font-bold">
-                      {user?.subscriptionTier === "lifetime" 
-                        ? "Never (Lifetime)" 
-                        : user?.subscriptionExpiresAt 
-                          ? new Date(user.subscriptionExpiresAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-                          : "July 20, 2026"}
-                    </span>
-                  </div>
-                  <div className="w-full h-px bg-border-primary/50"></div>
-                  <div className="flex justify-between items-center py-0.5">
-                    <span className="opacity-75">Books Created</span>
-                    <span className="text-text-primary font-mono font-bold">{totalBooks} / {user?.subscriptionTier === "free" ? "2" : "Unlimited"}</span>
-                  </div>
-                  <div className="w-full h-px bg-border-primary/50"></div>
-                  <div className="flex justify-between items-center py-0.5">
-                    <span className="opacity-75">AI Generations</span>
-                    <span className="text-text-primary font-mono font-bold">
-                      {user?.subscriptionTier === "free" ? "0 / 5" : "Unlimited (∞)"}
-                    </span>
-                  </div>
-                  <div className="w-full h-px bg-border-primary/50"></div>
-                  <div className="flex justify-between items-center py-0.5">
-                    <span className="opacity-75">EPUB/PDF Exports</span>
-                    <span className="text-text-primary font-mono font-bold">
-                      {user?.subscriptionTier === "free" ? "1 / 2" : "Unlimited (∞)"}
-                    </span>
-                  </div>
-                </div>
-
-                <Link
-                  to="/pricing"
-                  className="w-full h-9 bg-[#8B5CF6] hover:bg-[#7c3aed] text-white active:scale-[0.98] rounded-xl text-[10px] font-bold tracking-wider uppercase transition-all flex items-center justify-center cursor-pointer shadow-md shadow-[#8B5CF6]/10"
-                >
-                  Manage Subscription
-                </Link>
-              </div>
-
             </div>
+
 
             {/* Right Column */}
             <div className="md:col-span-7 flex flex-col gap-6">
