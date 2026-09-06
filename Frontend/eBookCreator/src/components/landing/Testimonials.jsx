@@ -1,74 +1,76 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 const Testimonials = () => {
   const reviews = [
     {
-      text: "The asynchronous chunking is a game-changer. I generated a full 12-chapter textbook on Rust programming in under 10 minutes.",
+      text: "I generated a complete 10-chapter technical handbook in under 15 minutes. The chapter coherence and clean formatting were unbelievable.",
       stars: 5,
-      name: "Audrey Stevenson",
-      role: "Technical Author",
+      name: "Marcus Vance",
+      role: "Engineering Lead & Author",
     },
     {
-      text: "Visual consistency was always my bottleneck with AI illustrators. Style locking solves it perfectly. All chapter plates match my theme.",
+      text: "The cover designer and PDF export saved me hundreds of dollars on freelance formatting. My book was ready for Amazon Kindle right away.",
       stars: 5,
-      name: "Fred Rodriguez",
-      role: "Fiction Writer",
+      name: "Sophia Martinez",
+      role: "Digital Publisher",
     },
     {
-      text: "Auto-pagination and layout margins worked flawlessly. Exporting directly to PDF saved me hours of manual formatting in Word.",
+      text: "The fact that all AI features, outlines, and multi-format exports are completely free without paywalls makes this an indispensable tool.",
       stars: 5,
-      name: "Laura Ferguson",
-      role: "Content Marketer",
-    },
-    {
-      text: "The semantic anchor tracking prevented the AI from repeating itself across chapters. The narrative flows like a human wrote it.",
-      stars: 5,
-      name: "Bennett Miller",
-      role: "Self-Publisher",
+      name: "Liam O'Connor",
+      role: "Content Creator",
     },
   ];
 
   return (
-    <section className="py-24 bg-bg-primary border-b border-border-primary relative transition-colors duration-250">
-      {/* Soft abstract watercolor gradient background */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/5 h-3/5 bg-brand-purple/3 blur-[90px] rounded-full pointer-events-none"></div>
+    <section className="py-24 bg-bg-secondary border-b border-border-primary relative transition-colors duration-250">
+      {/* Soft ambient background */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/5 h-3/5 bg-brand-purple/5 blur-[100px] rounded-full pointer-events-none"></div>
 
       <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
         
-        <h2 className="font-display font-normal text-3xl sm:text-4xl text-text-primary mb-2">
-          What Our Writers Say
-        </h2>
-        <p className="text-text-secondary text-xs mb-16">
-          Read reviews from authors, marketers, and developers automating ebook publishing.
-        </p>
+        {/* Header */}
+        <div className="max-w-2xl mx-auto mb-16">
+          <span className="text-[11px] font-bold uppercase tracking-widest text-amber-500 bg-amber-500/10 px-3.5 py-1.5 rounded-full">
+            Trusted by Creators
+          </span>
+          <h2 className="font-display font-light text-3xl sm:text-4xl lg:text-5xl text-text-primary mt-4 mb-3">
+            Loved by Authors & Publishers
+          </h2>
+          <p className="text-text-secondary text-sm leading-relaxed">
+            See how writers, educators, and solopreneurs use eBookAI to publish faster.
+          </p>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        {/* Testimonials Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {reviews.map((rev, index) => (
-            <div key={index} className="border border-border-primary bg-bg-secondary p-6 relative flex flex-col justify-between items-center rounded-[2px] shadow-sm hover:shadow-md transition-shadow duration-300">
-              
-              {/* Double Quotes Icon at the top */}
-              <div className="text-5xl font-serif text-brand-purple/20 select-none leading-none -mt-4 mb-2">
-                ””
-              </div>
-
-              {/* Review Text */}
-              <p className="text-xs text-text-secondary leading-relaxed italic text-center mb-6 min-h-[72px]">
-                "{rev.text}"
-              </p>
-
-              {/* Star Rating & Author info */}
-              <div className="flex flex-col items-center">
-                <div className="flex items-center gap-0.5 text-xs text-amber-400 mb-4">
+            <div 
+              key={index} 
+              className="border border-border-primary bg-bg-primary p-7 rounded-2xl flex flex-col justify-between text-left shadow-sm hover:shadow-lg transition-all duration-300 group"
+            >
+              <div>
+                {/* Rating Stars */}
+                <div className="flex items-center gap-1 text-amber-400 mb-5">
                   {"★".repeat(rev.stars)}
                 </div>
-                
-                {/* Custom Avatar with initials */}
-                <div className="w-10 h-10 rounded-full bg-bg-tertiary flex items-center justify-center font-bold text-xs text-text-primary mb-3 border border-border-primary">
+
+                {/* Review Text */}
+                <p className="text-xs sm:text-sm text-text-secondary leading-relaxed mb-6 italic">
+                  "{rev.text}"
+                </p>
+              </div>
+
+              {/* Author Info */}
+              <div className="pt-4 border-t border-border-primary/60 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-brand-purple to-brand-blue flex items-center justify-center font-bold text-xs text-white shrink-0 shadow-xs">
                   {rev.name.split(" ").map(n => n[0]).join("")}
                 </div>
-
-                <h4 className="text-xs font-bold text-text-primary">{rev.name}</h4>
-                <span className="text-[10px] text-text-muted font-mono uppercase tracking-wider mt-0.5">{rev.role}</span>
+                <div>
+                  <h4 className="text-xs sm:text-sm font-bold text-text-primary">{rev.name}</h4>
+                  <span className="text-[10px] text-text-muted">{rev.role}</span>
+                </div>
               </div>
 
             </div>

@@ -4,44 +4,70 @@ import { Link } from "react-router-dom";
 const Features = () => {
   const featuresList = [
     {
-      category: "Pipeline Core",
-      title: "Asynchronous Chunking",
-      volume: "Vol. 01",
-      subtitle: "Context Limit Bypass",
-      description: "Drafts chapters sequentially in the background to bypass standard LLM context token output ceiling.",
-      color: "from-blue-500 to-cyan-500",
-      version: "v1.0.0",
-      rating: 5,
+      category: "AI Generation",
+      title: "Smart Outlining & Structuring",
+      description: "Generate complete chapter roadmaps, target audience hooks, and narrative themes tailored to your book's topic in seconds.",
+      icon: (
+        <svg className="w-6 h-6 text-brand-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      ),
+      badge: "Gemini 2.5 Pro",
     },
     {
-      category: "Narrative Logic",
-      title: "Semantic Anchors",
-      volume: "Vol. 02",
-      subtitle: "Context Anchor Memory",
-      description: "Carries a dynamic running summary context memory across chapters to ensure seamless flow and prevent repetition.",
-      color: "from-purple-500 to-indigo-500",
-      version: "v1.2.0",
-      rating: 5,
+      category: "Cohesive Writing",
+      title: "Context-Aware Drafting",
+      description: "Sequential chapter writing carries forward previous chapter context so your entire book maintains a natural, consistent flow without repetitions.",
+      icon: (
+        <svg className="w-6 h-6 text-brand-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        </svg>
+      ),
+      badge: "Memory Engine",
     },
     {
-      category: "Image Assets",
-      title: "Imagen 3 Style Locking",
-      volume: "Vol. 03",
-      subtitle: "Visual Style Anchor",
-      description: "Appends fixed prompt modifier tags to ensure all generated chapter illustration plates share a unified visual style.",
-      color: "from-rose-500 to-orange-500",
-      version: "v2.0.0",
-      rating: 5,
+      category: "Design Studio",
+      title: "Custom Cover & Plate Art",
+      description: "Craft eye-catching paperback and digital covers using custom gradients, typography themes, and AI-generated illustration styles.",
+      icon: (
+        <svg className="w-6 h-6 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+      ),
+      badge: "Cover Studio",
     },
     {
-      category: "Compiler Engine",
-      title: "Multi-Format Export",
-      volume: "Vol. 04",
-      subtitle: "Layout Compiler",
-      description: "Recalculates page sizes, margins, headers, and footers to output beautifully aligned PDF or Word documents.",
-      color: "from-emerald-500 to-teal-500",
-      version: "v1.5.0",
-      rating: 5,
+      category: "Publishing Suite",
+      title: "Multi-Format Instant Export",
+      description: "Export clean, perfectly paginated PDFs, editable Word DOCX files, standard EPUB packages, and Markdown files ready for Kindle KDP or print.",
+      icon: (
+        <svg className="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+      ),
+      badge: "4 Formats",
+    },
+    {
+      category: "Interactive Editing",
+      title: "Real-time Chapter Workspace",
+      description: "Effortlessly rearrange chapters, re-generate specific sections, rewrite paragraphs with AI, or polish prose with zero lag.",
+      icon: (
+        <svg className="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+      ),
+      badge: "Live Editor",
+    },
+    {
+      category: "Community & Growth",
+      title: "Discover Hub & Reader Ratings",
+      description: "Publish your creations to the public library, gather reader ratings and reviews, and monitor your books' reader engagement stats in real-time.",
+      icon: (
+        <svg className="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      ),
+      badge: "Author Analytics",
     },
   ];
 
@@ -49,85 +75,73 @@ const Features = () => {
     <section id="features" className="py-24 bg-bg-primary border-b border-border-primary scroll-mt-20 transition-colors duration-250">
       <div className="max-w-7xl mx-auto px-6">
         
-        {/* Title */}
+        {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="font-display font-normal text-3xl sm:text-4xl text-text-primary mb-2">
-            Top eBook AI Features
+          <span className="text-[11px] font-bold uppercase tracking-widest text-brand-purple bg-brand-purple/10 px-3.5 py-1.5 rounded-full">
+            Powerful Authoring Features
+          </span>
+          <h2 className="font-display font-light text-3xl sm:text-4xl lg:text-5xl text-text-primary mt-4 mb-3">
+            Everything You Need to Write & Publish
           </h2>
-          <p className="text-text-secondary text-xs">
-            Explore the core architectural blocks that power our ebook generation pipeline.
+          <p className="text-text-secondary text-sm leading-relaxed">
+            A comprehensive suite of intelligent tools designed to streamline the entire publishing journey from initial idea to distribution.
           </p>
         </div>
 
-        {/* Grid matching the "Top Trending Book" layout from screenshots */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        {/* Feature Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {featuresList.map((item, index) => (
-            <div key={index} className="flex flex-col items-center text-center group">
-              
-              {/* 3D-like Book Cover mockup (CSS-based) */}
-              <div className="w-44 h-60 bg-bg-secondary mb-6 relative shadow-md group-hover:shadow-lg group-hover:-translate-y-2 transition-all duration-300 rounded-[1px] overflow-hidden border border-border-primary flex flex-col justify-between p-4">
-                {/* Spine shadow */}
-                <div className="absolute top-0 left-0 w-2 h-full bg-text-primary/[0.06] pointer-events-none"></div>
-                <div className="absolute top-0 left-2 w-[1px] h-full bg-text-primary/[0.03] pointer-events-none"></div>
-                
-                <div className="flex items-center justify-between text-[8px] font-bold text-text-muted font-mono">
-                  <span>{item.volume}</span>
-                  <span>EBOOKAI</span>
+            <div 
+              key={index} 
+              className="bg-bg-secondary border border-border-primary rounded-2xl p-7 flex flex-col justify-between hover:border-brand-purple/40 hover:shadow-xl hover:shadow-brand-purple/5 hover:-translate-y-1 transition-all duration-300 group text-left"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <div className="w-12 h-12 rounded-xl bg-bg-primary border border-border-primary flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform duration-300">
+                    {item.icon}
+                  </div>
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-text-muted bg-bg-primary px-2.5 py-1 rounded-md border border-border-primary">
+                    {item.badge}
+                  </span>
                 </div>
 
-                <div className="my-auto py-2 text-left pl-2">
-                  <div className={`h-1 w-6 bg-gradient-to-r ${item.color} mb-3`}></div>
-                  <h4 className="font-display font-semibold text-sm text-text-primary leading-snug">
-                    {item.title}
-                  </h4>
-                  <p className="text-[9px] text-text-muted font-mono uppercase tracking-wider mt-1">
-                    {item.subtitle}
-                  </p>
-                </div>
+                <span className="text-[10px] font-bold tracking-widest text-text-muted uppercase mb-1 block">
+                  {item.category}
+                </span>
 
-                <div className="text-[8px] text-text-muted font-mono border-t border-border-primary pt-2 text-left pl-2">
-                  Node module active
-                </div>
+                <h3 className="font-display font-bold text-text-primary text-lg mb-2.5 group-hover:text-brand-purple transition-colors">
+                  {item.title}
+                </h3>
+
+                <p className="text-xs sm:text-sm text-text-secondary leading-relaxed mb-6">
+                  {item.description}
+                </p>
               </div>
 
-              {/* Category */}
-              <span className="text-[9px] font-bold tracking-widest text-text-muted uppercase mb-1">
-                {item.category}
-              </span>
-
-              {/* Title */}
-              <h3 className="font-display font-bold text-text-primary text-sm mb-1 group-hover:text-brand-blue transition-colors duration-200">
-                {item.title}
-              </h3>
-
-              {/* Star Rating */}
-              <div className="flex items-center gap-0.5 text-xs text-amber-400 mb-2">
-                {"★".repeat(item.rating)}
+              <div className="pt-4 border-t border-border-primary/60 flex items-center text-xs font-bold text-brand-purple group-hover:translate-x-1 transition-transform">
+                <span>Start creating with {item.badge}</span>
+                <span className="ml-1.5">➔</span>
               </div>
-
-              {/* Version/Price label */}
-              <div className="text-xs font-bold text-brand-purple font-mono mb-3">
-                {item.version}
-              </div>
-
-              {/* Description */}
-              <p className="text-xs text-text-secondary max-w-[200px] leading-relaxed mb-6 min-h-[48px]">
-                {item.description}
-              </p>
-
-              {/* ADD TO PIPELINE action link */}
-              <Link 
-                to="/signup" 
-                className="inline-flex items-center gap-1.5 text-[9px] font-bold tracking-widest uppercase text-text-primary border-b border-text-primary pb-0.5 hover:text-brand-blue hover:border-brand-blue transition-colors duration-200"
-              >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
-                </svg>
-                Launch Node
-              </Link>
-
             </div>
           ))}
+        </div>
+
+        {/* Bottom CTA Banner */}
+        <div className="mt-16 p-8 rounded-3xl bg-gradient-to-r from-brand-purple/10 via-brand-blue/10 to-transparent border border-border-primary flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="text-left">
+            <h3 className="font-display font-bold text-xl text-text-primary mb-1">
+              Ready to create your first book in minutes?
+            </h3>
+            <p className="text-xs sm:text-sm text-text-secondary">
+              No credit card or setup required. Enjoy unrestricted access to all features today.
+            </p>
+          </div>
+          <Link 
+            to="/signup"
+            className="whitespace-nowrap px-6 py-3 rounded-xl bg-text-primary text-bg-primary font-bold text-xs uppercase tracking-wider hover:opacity-90 transition-opacity shadow-md"
+          >
+            Create eBook Free ➔
+          </Link>
         </div>
 
       </div>

@@ -3,8 +3,8 @@ import Nav from "../components/layout/Nav";
 import Hero from "../components/landing/Hero";
 import Features from "../components/landing/Features";
 import Workflow from "../components/landing/Workflow";
+import Showcase from "../components/landing/Showcase";
 import Testimonials from "../components/landing/Testimonials";
-import Articles from "../components/landing/Articles";
 import FAQ from "../components/landing/FAQ";
 import Footer from "../components/landing/Footer";
 
@@ -16,8 +16,8 @@ const LandingPage = () => {
         <Hero />
         <Features />
         <Workflow />
+        <Showcase />
         <Testimonials />
-        <Articles />
         <FAQ />
       </main>
       <Footer />
