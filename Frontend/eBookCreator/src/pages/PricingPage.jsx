@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import ThemeSwitcher from "../components/ui/ThemeSwitcher";
 import toast from "react-hot-toast";
+import { API_PAYMENT } from "../utils/apiPaths";
 
 const PricingPage = () => {
   const { user, setUser } = useAuth();
@@ -100,7 +101,7 @@ const PricingPage = () => {
     const token = localStorage.getItem("token");
 
     try {
-      const response = await fetch("http://localhost:5000/api/payment/create-checkout-session", {
+      const response = await fetch(`${API_PAYMENT}/create-checkout-session`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -139,7 +140,7 @@ const PricingPage = () => {
 
     const toastId = toast.loading("Authorizing simulated payment...");
     try {
-      const response = await fetch("http://localhost:5000/api/payment/simulate-checkout", {
+      const response = await fetch(`${API_PAYMENT}/simulate-checkout`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import ThemeSwitcher from "../components/ui/ThemeSwitcher";
 import toast from "react-hot-toast";
+import { API_AUTH, API_BOOKS } from "../utils/apiPaths";
 
 // Reusable Book Cover for the Shelf
 const BookShelfCover = ({ config, title, className = "" }) => {
@@ -169,7 +170,7 @@ const ProfilePage = () => {
     setLoading(true);
     const token = localStorage.getItem("token");
     try {
-      const response = await fetch("http://localhost:5000/api/books", {
+      const response = await fetch(API_BOOKS, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -196,7 +197,7 @@ const ProfilePage = () => {
     const token = localStorage.getItem("token");
     const toastId = toast.loading("Deleting eBook...");
     try {
-      const response = await fetch(`http://localhost:5000/api/books/${bookId}`, {
+      const response = await fetch(`${API_BOOKS}/${bookId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -231,7 +232,7 @@ const ProfilePage = () => {
     const toastId = toast.loading("Uploading image...");
 
     try {
-      const response = await fetch("http://localhost:5000/api/auth/upload-avatar", {
+      const response = await fetch(`${API_AUTH}/upload-avatar`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -257,7 +258,7 @@ const ProfilePage = () => {
     e.preventDefault();
     const token = localStorage.getItem("token");
     try {
-      const response = await fetch("http://localhost:5000/api/auth/profile", {
+      const response = await fetch(`${API_AUTH}/profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

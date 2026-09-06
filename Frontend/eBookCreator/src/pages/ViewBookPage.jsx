@@ -3,8 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import toast from "react-hot-toast";
-
-const API_BOOKS = "http://localhost:5000/api/books";
+import { API_BOOKS } from "../utils/apiPaths";
 
 // Book Cover Component
 const BookCover = ({ config, title, author, className = "" }) => {

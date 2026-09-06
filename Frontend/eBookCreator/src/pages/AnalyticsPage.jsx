@@ -3,8 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import ThemeSwitcher from "../components/ui/ThemeSwitcher";
 import toast from "react-hot-toast";
-
-const API_ANALYTICS = "http://localhost:5000/api/analytics";
+import { API_ANALYTICS } from "../utils/apiPaths";
 
 // Animated counter hook
 const useCountUp = (target, duration = 1200) => {

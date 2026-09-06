@@ -5,8 +5,7 @@ import ThemeSwitcher from "../components/ui/ThemeSwitcher";
 import Modal from "../components/ui/Modal";
 import BookCover from "../components/Editor/BookCover";
 import toast from "react-hot-toast";
-
-const API_ADMIN = "http://localhost:5000/api/admin";
+import { API_ADMIN } from "../utils/apiPaths";
 
 const AdminPage = () => {
   const { user, logout } = useAuth();

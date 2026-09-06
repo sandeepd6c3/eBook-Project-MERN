@@ -14,9 +14,7 @@ import AIChangePreview from "../components/Editor/AIChangePreview";
 import OutlineGeneratorModal from "../components/Editor/OutlineGeneratorModal";
 import CoverBuilderModal from "../components/Editor/CoverBuilderModal";
 import ExportSettingsModal from "../components/ui/ExportSettingsModal";
-
-const API_BOOKS = "http://localhost:5000/api/books";
-const API_AI = "http://localhost:5000/api/ai";
+import { API_BOOKS, API_AI } from "../utils/apiPaths";
 
 const EditorPage = () => {
   const [searchParams] = useSearchParams();

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
 import ThemeSwitcher from "../components/ui/ThemeSwitcher";
 import toast from "react-hot-toast";
+import { API_BOOKS } from "../utils/apiPaths";
 
 // Reusable Book Cover
 const DiscoverBookCover = ({ config, title, author, className = "" }) => {
@@ -61,7 +61,7 @@ const DiscoverPage = () => {
     setLoading(true);
     const token = localStorage.getItem("token");
     try {
-      const url = `http://localhost:5000/api/books/public?search=${encodeURIComponent(searchText)}&category=${encodeURIComponent(selectedCategory)}&sort=${encodeURIComponent(selectedSort)}`;
+      const url = `${API_BOOKS}/public?search=${encodeURIComponent(searchText)}&category=${encodeURIComponent(selectedCategory)}&sort=${encodeURIComponent(selectedSort)}`;
       const response = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });

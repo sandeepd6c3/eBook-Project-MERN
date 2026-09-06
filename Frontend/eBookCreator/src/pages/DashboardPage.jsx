@@ -10,9 +10,9 @@ import ThemeSwitcher from "../components/ui/ThemeSwitcher";
 import InteractiveTilt from "../components/ui/InteractiveTilt";
 import BookCover from "../components/Editor/BookCover";
 import toast from "react-hot-toast";
+import { API_BOOKS, API_AI } from "../utils/apiPaths";
 
-const API_BASE = "http://localhost:5000/api/books";
-const API_AI = "http://localhost:5000/api/ai";
+const API_BASE = API_BOOKS;
 
 const DashboardPage = () => {
   const { user, logout } = useAuth();
