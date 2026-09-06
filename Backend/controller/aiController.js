@@ -1,5 +1,6 @@
 const { GoogleGenAI } = require("@google/genai");
 const User = require("../models/user");
+const Book = require("../models/book");
 const path = require("path");
 const fs = require("fs");
 const https = require("https");
@@ -27,169 +28,458 @@ const checkAILimit = async (req, res) => {
   return user;
 };
 
-
 // Helper: Increment AI generation counter
 const incrementAIUsage = async (userId) => {
   await User.findByIdAndUpdate(userId, { $inc: { aiGenerationsUsed: 1 } });
+};
+
+// Helper: Clean JSON response from Gemini
+const cleanJSONText = (text) => {
+  let cleaned = text.trim();
+  if (cleaned.startsWith("```")) {
+    cleaned = cleaned.replace(/^```(?:json)?\s*/i, "").replace(/```$/, "").trim();
+  }
+  return cleaned;
+};
+
+// @desc    Generate Complete Comprehensive Book Outline & Structure
+// @route   POST /api/ai/generate-book
+// @access  Private
+const generateBook = async (req, res) => {
+  const { prompt, difficulty, tone, contentType, targetAudience, chaptersCount } = req.body;
+
+  if (!prompt || !prompt.trim()) {
+    return res.status(400).json({ message: "Book prompt or topic is required" });
+  }
+
+  const user = await checkAILimit(req, res);
+  if (!user) return;
+
+  const count = parseInt(chaptersCount, 10) || 5;
+
+  const systemPrompt = `You are a world-class book author, editor, and educational publisher.
+A user wants to create a complete, high-quality, comprehensive digital book.
+
+User Prompt / Subject: "${prompt}"
+Difficulty Level: "${difficulty || "Beginner"}"
+Tone: "${tone || "Professional & Friendly"}"
+Content Type: "${contentType || "Practical Guide"}"
+Target Audience: "${targetAudience || "General Learners"}"
+
+Generate a complete book plan with:
+1. "title": Catchy, professional book title.
+2. "subtitle": Engaging subtitle summarizing the value.
+3. "description": A 2-3 paragraph overview of the book, prerequisites, and learning outcomes.
+4. "chapters": Array of exactly ${count} chapters.
+For each chapter include:
+   - "title": Chapter Title (e.g. "Chapter 1: ...")
+   - "summary": 2-3 sentences explaining the core concept, case studies, and practical takeaways.
+   - "sections": Array of 3-5 sub-topics/sections covered in this chapter.
+   - "includesExercises": true
+   - "includesExamples": true
+
+Return your response ONLY as a valid JSON object with NO markdown enclosing, NO \`\`\`json blocks.
+JSON format:
+{
+  "title": "...",
+  "subtitle": "...",
+  "description": "...",
+  "chapters": [
+    {
+      "title": "Chapter 1: ...",
+      "summary": "...",
+      "sections": ["Section 1.1: ...", "Section 1.2: ...", "Section 1.3: ..."],
+      "includesExercises": true,
+      "includesExamples": true
+    }
+  ]
+}`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3.6-flash",
+      contents: systemPrompt,
+    });
+
+    const parsed = JSON.parse(cleanJSONText(response.text));
+    await incrementAIUsage(user._id);
+
+    res.json(parsed);
+  } catch (error) {
+    console.error("Generate book error:", error);
+    res.status(500).json({
+      message: "Failed to generate complete book plan",
+      error: error.message,
+    });
+  }
 };
 
 // @desc    Generate eBook outline (chapters list)
 // @route   POST /api/ai/generate-outline
 // @access  Private
 const generateOutline = async (req, res) => {
-  const { title, description, audience, style, length } = req.body;
+  const { title, description, audience, style, length, difficulty, contentType } = req.body;
 
   if (!title) {
     return res.status(400).json({ message: "Book title is required" });
   }
 
-  // Check AI limits
   const user = await checkAILimit(req, res);
   if (!user) return;
 
-  // If no API Key is set, return mock fallback outline
-  if (!ai) {
-    console.log("GEMINI_API_KEY not configured. Returning mock outline fallback.");
-    // Simulate delay
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    const mockOutline = [
-      {
-        title: "Chapter 1: Foundational Core Principles",
-        summary: `Introduction and overview of the fundamental concepts behind "${title}" tailored for ${audience || "general audience"}. Setting the stage and defining main objectives.`,
-      },
-      {
-        title: "Chapter 2: Essential Workflows & System Setup",
-        summary: "Detailed guides on initial environment setup, essential configurations, tools, and recommended packages.",
-      },
-      {
-        title: "Chapter 3: Core Implementation & Design Patterns",
-        summary: "Step-by-step review of code structuring, components design, architectural layout patterns, and clean bindings.",
-      },
-      {
-        title: "Chapter 4: Advanced Paradigms & Optimization",
-        summary: "Diving into complex techniques, performance optimization methods, resolving bottlenecks, and debugging logs.",
-      },
-      {
-        title: "Chapter 5: Publishing, Exporting & Next Steps",
-        summary: "Preparing drafts for public reviews, exporting to high-quality PDF/EPUB formats, and final packaging checks.",
-      },
-    ];
-    await incrementAIUsage(user._id);
-    return res.json({ chapters: mockOutline });
-  }
-
   try {
     const prompt = `You are a professional book publisher and editor.
-Create a detailed chapter outline for a book with:
+Create a detailed, logical chapter outline for a publication-ready book.
 Title: "${title}"
-Details/Niche: "${description}"
+Details/Niche: "${description || ""}"
 Target Audience: "${audience || "General"}"
-Writing Style/Tone: "${style || "Friendly"}"
-Outline Length: "${length || "Medium"}"
+Writing Style/Tone: "${style || "Friendly & Clear"}"
+Difficulty: "${difficulty || "Beginner"}"
+Content Type: "${contentType || "Practical Guide"}"
+Outline Length: "${length || "5 Chapters"}"
 
-Generate exactly 5 to 6 chapters. For each chapter, provide:
+Generate 5 to 7 chapters. For each chapter, provide:
 1. Chapter Title (e.g. "Chapter 1: ...")
-2. Brief Summary/Outline (1-2 sentences explaining what the chapter will cover).
+2. Summary (2 sentences explaining theoretical foundations, real-world examples, and actionable takeaways).
 
-Return your response ONLY as a valid JSON array of objects, with no markdown formatting, no code blocks (such as \`\`\`json), and no extra text.
-The JSON array must have this structure:
+Return your response ONLY as a valid JSON array of objects, with NO markdown formatting, NO code blocks.
 [
   { "title": "Chapter 1: ...", "summary": "..." },
   { "title": "Chapter 2: ...", "summary": "..." }
 ]`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.6-flash",
       contents: prompt,
     });
 
-    let text = response.text.trim();
-    
-    if (text.startsWith("```")) {
-      text = text.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
-    }
-
-    try {
-      const chapters = JSON.parse(text);
-      await incrementAIUsage(user._id);
-      res.json({ chapters });
-    } catch (parseErr) {
-      console.error("Gemini output JSON parse error. Text raw:", text, parseErr);
-      res.status(500).json({
-        message: "AI generated outline format was invalid. Please try again.",
-        error: parseErr.message,
-      });
-    }
+    const chapters = JSON.parse(cleanJSONText(response.text));
+    await incrementAIUsage(user._id);
+    res.json({ chapters });
   } catch (error) {
     console.error("AI Generate outline error:", error);
     res.status(500).json({ message: "AI Outline generation failed", error: error.message });
   }
 };
 
-// @desc    Draft full chapter content with AI
+// @desc    Draft full, rich chapter content with AI (Structured Educational Format)
 // @route   POST /api/ai/generate-chapter
 // @access  Private
 const generateChapter = async (req, res) => {
-  const { title, chapterTitle, chapterSummary, writingStyle } = req.body;
+  const {
+    title,
+    chapterTitle,
+    chapterSummary,
+    writingStyle,
+    difficulty,
+    contentType,
+    length,
+    options, // { examples: true, exercises: true, mcqs: true, summary: true, faq: true, interviewQuestions: true }
+    previousChapterContext,
+  } = req.body;
 
   if (!title || !chapterTitle) {
     return res.status(400).json({ message: "Book title and chapter title are required" });
   }
 
-  // Check AI limits
   const user = await checkAILimit(req, res);
   if (!user) return;
 
-  // If no API Key is set, return mock fallback chapter text
-  if (!ai) {
-    console.log("GEMINI_API_KEY not configured. Returning mock chapter draft fallback.");
-    // Simulate delay
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+  const opt = options || {};
 
-    const mockBody = `<h2>Welcome to ${chapterTitle}</h2>
+  const prompt = `You are an acclaimed textbook author, industry expert, and master educator.
+Write a complete, deeply educational, and structured chapter for a book.
 
-<p>In this segment of our guide for "${title}", we explore the key details surrounding these principles. Writing this segment requires a structured, clear approach to ensure that readers can comfortably follow along and extract actionable guidelines.</p>
+Book Title: "${title}"
+Chapter: "${chapterTitle}"
+Chapter Goal/Summary: "${chapterSummary || ""}"
+Tone: "${writingStyle || "Professional & Engaging"}"
+Difficulty Level: "${difficulty || "Beginner"}"
+Content Type: "${contentType || "Practical Guide"}"
+Target Length: "${length || "Standard (approx 1200-1800 words)"}"
+${previousChapterContext ? `Context from previous chapter: "${previousChapterContext}"` : ""}
 
-<p>As we dive deeper, we must recognize that laying out solid structural anchors is key to mastering these paradigms. By establishing robust patterns early in the development lifecycle, we can prevent common errors, streamline building cycles, and ensure that our publishing outputs remain high-quality.</p>
+STRUCTURAL INSTRUCTIONS:
+- Write comprehensive, in-depth content. Do NOT write shallow summaries or placeholders.
+- Use clean semantic HTML elements directly (<h2>, <h3>, <p>, <ul>, <ol>, <li>, <strong>, <em>, <blockquote>, <code>, <pre><code>...</code></pre>, <hr/>).
+- Start immediately with the chapter narrative or introduction (no markdown, no backticks, no wrapping <html><body> tags).
+- Include practical step-by-step breakdowns, conceptual definitions, and architecture/logic flow where applicable.
+${opt.examples !== false ? `- Include a dedicated '<h3>Practical Real-World Examples & Case Studies</h3>' with concrete examples (and code/data blocks if relevant).` : ""}
+${opt.summary !== false ? `- Include a '<h3>Chapter Summary & Key Takeaways</h3>' with bullet points summarizing the core learnings.` : ""}
+${opt.exercises ? `- Include a '<h3>Practice Exercises & Hands-On Challenges</h3>' with 3-4 problem-solving exercises.` : ""}
+${opt.mcqs ? `- Include a '<h3>Self-Assessment Multiple Choice Questions (MCQs)</h3>' with 3 questions, options, and explanations.` : ""}
+${opt.faq ? `- Include a '<h3>Frequently Asked Questions</h3>' covering common beginner traps and best practices.` : ""}
+${opt.interviewQuestions ? `- Include a '<h3>Common Interview & Certification Questions</h3>' with sample model answers.` : ""}
 
-<blockquote>Furthermore, integrating style configurations allows us to lock in a consistent tone. Whether you are aiming for an academic, formal authority or a conversational, friendly guide, consistency remains the single most important factor in keeping readers engaged across hundreds of pages.</blockquote>
-
-<p>Finally, packaging your chapters for final document exports completes the writing lifecycle. Exporting to high-resolution formats like PDF and EPUB requires clean outline compilation, metadata verification, and layout alignment. In the coming segments, we will detail how this publishing pipeline behaves.</p>`;
-
-    await incrementAIUsage(user._id);
-    return res.json({ content: mockBody });
-  }
+Write the full HTML chapter now:`;
 
   try {
-    const prompt = `You are an expert eBook writer. Write a comprehensive, detailed chapter draft for a book.
-Book Title: "${title}"
-Chapter Title: "${chapterTitle}"
-Chapter Summary: "${chapterSummary || ""}"
-Writing Tone/Style: "${writingStyle || "Conversational"}"
-
-Requirements:
-- Write at least 4 to 5 detailed paragraphs.
-- Provide comfortable, flowing paragraphs in a professional and highly engaging tone.
-- Do not write summary headers, welcome text, or meta-text. Start directly with the chapter content.
-- Use clean HTML formatting (such as <h2>Section</h2>, <p>paragraph</p>, <strong>bold</strong>, <blockquote>quote</blockquote>). Do NOT use markdown. Write raw HTML elements directly.
-
-Start writing now:`;
-
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.6-flash",
       contents: prompt,
     });
 
+    let content = response.text.trim();
+    if (content.startsWith("```")) {
+      content = content.replace(/^```(?:html)?\s*/i, "").replace(/```$/, "").trim();
+    }
+
     await incrementAIUsage(user._id);
-    res.json({ content: response.text });
+    res.json({ content });
   } catch (error) {
     console.error("AI Generate chapter error:", error);
     res.status(500).json({ message: "AI Chapter drafting failed", error: error.message });
   }
 };
 
-// @desc    Edit text with AI assistant (Rewrite, expand, shorten, fix grammar, shift tone, ask chat)
+// @desc    Generic AI Command Editor (Whole Chapter / Whole Content Natural Language)
+// @route   POST /api/ai/edit-content
+// @access  Private
+const editContent = async (req, res) => {
+  const { content, instruction, chapterTitle, bookTitle, tone, difficulty } = req.body;
+
+  if (!content || !instruction) {
+    return res.status(400).json({ message: "Content and natural language instruction are required" });
+  }
+
+  const user = await checkAILimit(req, res);
+  if (!user) return;
+
+  const prompt = `You are a professional book editor and writing assistant.
+Apply the following user instruction to modify and enhance the provided chapter content.
+
+Book Title: "${bookTitle || "eBook"}"
+Chapter: "${chapterTitle || "Current Chapter"}"
+Tone: "${tone || "Professional"}"
+Difficulty: "${difficulty || "Standard"}"
+
+USER INSTRUCTION:
+"${instruction}"
+
+ORIGINAL CONTENT (HTML):
+${content}
+
+REQUIREMENTS:
+- Strictly follow the user's instruction while maintaining the context and format of the chapter.
+- Return the full modified content formatted in clean semantic HTML (<h2>, <h3>, <p>, <ul>, <ol>, <li>, <blockquote>, <pre><code>, etc.).
+- Do NOT use markdown code blocks (\`\`\`html). Output raw HTML elements directly.
+- Preserve unchanged sections and weave additions seamlessly into the chapter.
+
+Return the modified HTML content now:`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3.6-flash",
+      contents: prompt,
+    });
+
+    let modified = response.text.trim();
+    if (modified.startsWith("```")) {
+      modified = modified.replace(/^```(?:html)?\s*/i, "").replace(/```$/, "").trim();
+    }
+
+    await incrementAIUsage(user._id);
+    res.json({
+      original: content,
+      suggested: modified,
+      instruction,
+    });
+  } catch (error) {
+    console.error("AI Edit content error:", error);
+    res.status(500).json({ message: "AI Content edit failed", error: error.message });
+  }
+};
+
+// @desc    Floating Selection AI (Modify or answer specifically for selected text)
+// @route   POST /api/ai/edit-selection
+// @access  Private
+const editSelection = async (req, res) => {
+  const { selectedText, action, customInstruction, contextBefore, contextAfter } = req.body;
+
+  if (!selectedText) {
+    return res.status(400).json({ message: "Selected text is required" });
+  }
+
+  const user = await checkAILimit(req, res);
+  if (!user) return;
+
+  let promptInstruction = "";
+  switch (action) {
+    case "rewrite":
+      promptInstruction = "Rewrite the selected text to make it more engaging, articulate, and flow naturally.";
+      break;
+    case "expand":
+      promptInstruction = "Expand the selected text with rich details, explanations, and thorough nuance.";
+      break;
+    case "shorten":
+      promptInstruction = "Make the selected text concise, punchy, and direct while preserving all essential insights.";
+      break;
+    case "simplify":
+      promptInstruction = "Simplify this text so that complete beginners can easily understand it without jargon.";
+      break;
+    case "grammar":
+      promptInstruction = "Fix all grammar, spelling, punctuation, and syntax errors in the selected text.";
+      break;
+    case "professional":
+      promptInstruction = "Rewrite the selected text in an authoritative, polished, executive professional tone.";
+      break;
+    case "academic":
+      promptInstruction = "Rewrite the selected text with academic rigor, scholarly terminology, and formal structure.";
+    case "creative":
+      promptInstruction = "Rewrite the selected text in a vivid, storytelling, creative narrative style.";
+      break;
+    case "explain":
+      promptInstruction = "Provide an intuitive explanation and real-world analogy for the concept highlighted in the selected text.";
+      break;
+    case "add-example":
+      promptInstruction = "Add 2 practical, real-world examples illustrating the point made in the selected text.";
+      break;
+    case "continue":
+      promptInstruction = "Continue writing seamlessly from where the selected text left off for 2-3 paragraphs.";
+      break;
+    case "custom":
+    default:
+      promptInstruction = customInstruction || "Improve and polish the selected text.";
+      break;
+  }
+
+  const prompt = `You are an expert writing co-pilot in a rich book editor.
+Transform the selected passage based on this instruction: "${promptInstruction}"
+
+${contextBefore ? `Preceding Context: "${contextBefore.substring(Math.max(0, contextBefore.length - 200))}"` : ""}
+Selected Passage: "${selectedText}"
+${contextAfter ? `Succeeding Context: "${contextAfter.substring(0, 200)}"` : ""}
+
+Output clean HTML or formatted text representing the replacement passage. Do NOT output markdown code blocks.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3.6-flash",
+      contents: prompt,
+    });
+
+    let result = response.text.trim();
+    if (result.startsWith("```")) {
+      result = result.replace(/^```(?:html)?\s*/i, "").replace(/```$/, "").trim();
+    }
+
+    await incrementAIUsage(user._id);
+    res.json({
+      original: selectedText,
+      suggested: result,
+      action: action || "custom",
+    });
+  } catch (error) {
+    console.error("AI Edit selection error:", error);
+    res.status(500).json({ message: "AI Selection edit failed", error: error.message });
+  }
+};
+
+// @desc    Whole Book Assistant (Review, Consolidate, Add Elements across chapters)
+// @route   POST /api/ai/review-content
+// @access  Private
+const reviewContent = async (req, res) => {
+  const { bookId, command, chapters, bookTitle, bookDescription } = req.body;
+
+  if (!command) {
+    return res.status(400).json({ message: "Assistant command is required" });
+  }
+
+  const user = await checkAILimit(req, res);
+  if (!user) return;
+
+  const chaptersSummary = (chapters || []).map((ch, idx) => ({
+    chapterNumber: idx + 1,
+    title: ch.title,
+    length: ch.body ? ch.body.length : 0,
+    excerpt: ch.body ? ch.body.replace(/<[^>]*>/g, " ").substring(0, 250) + "..." : "",
+  }));
+
+  const prompt = `You are a Chief Literary Editor and Book Strategist.
+Analyze the entire book structure and respond to the author's macro command.
+
+Book Title: "${bookTitle || "eBook"}"
+Description: "${bookDescription || ""}"
+Author Command: "${command}"
+
+Current Chapters Overview:
+${JSON.stringify(chaptersSummary, null, 2)}
+
+Provide an actionable, structured response formatted in clean HTML.
+- If the author asked to generate an introduction, conclusion, glossary, index, or FAQ, provide the full high-grade text ready to be inserted.
+- If the author asked for consistency improvement, grammar audit, or tone adjustments across the book, provide chapter-by-chapter actionable suggestions and revisions.
+- Output clean HTML (<h2>, <h3>, <p>, <ul>, <li>, <strong>, etc.) without markdown enclosing.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3.6-flash",
+      contents: prompt,
+    });
+
+    let result = response.text.trim();
+    if (result.startsWith("```")) {
+      result = result.replace(/^```(?:html)?\s*/i, "").replace(/```$/, "").trim();
+    }
+
+    await incrementAIUsage(user._id);
+    res.json({
+      command,
+      response: result,
+    });
+  } catch (error) {
+    console.error("AI Review content error:", error);
+    res.status(500).json({ message: "AI Book Assistant review failed", error: error.message });
+  }
+};
+
+// @desc    Generate Exercises, MCQs, or Study Materials
+// @route   POST /api/ai/generate-exercises
+// @access  Private
+const generateExercises = async (req, res) => {
+  const { chapterTitle, chapterContent, type, difficulty } = req.body;
+
+  if (!chapterTitle) {
+    return res.status(400).json({ message: "Chapter title is required" });
+  }
+
+  const user = await checkAILimit(req, res);
+  if (!user) return;
+
+  const prompt = `You are an expert curriculum designer.
+Generate high-impact ${type || "exercises and questions"} for the following chapter:
+Chapter: "${chapterTitle}"
+Difficulty: "${difficulty || "Intermediate"}"
+
+Content Excerpt:
+${chapterContent ? chapterContent.replace(/<[^>]*>/g, " ").substring(0, 2000) : ""}
+
+Generate:
+1. 3 Practical Real-World Problem Solving Exercises
+2. 3 Multiple Choice Questions (with Answer Keys & Explanations)
+3. 2 Discussion/Interview Questions with Model Answers
+
+Format your response in clean, beautiful HTML elements directly (<h3>, <ol>, <li>, <p>, <strong>, <blockquote>). Do NOT use markdown.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3.6-flash",
+      contents: prompt,
+    });
+
+    let content = response.text.trim();
+    if (content.startsWith("```")) {
+      content = content.replace(/^```(?:html)?\s*/i, "").replace(/```$/, "").trim();
+    }
+
+    await incrementAIUsage(user._id);
+    res.json({ content });
+  } catch (error) {
+    console.error("AI Generate exercises error:", error);
+    res.status(500).json({ message: "Failed to generate exercises", error: error.message });
+  }
+};
+
+// @desc    Edit text with AI assistant (Legacy & Quick Actions)
 // @route   POST /api/ai/edit-text
 // @access  Private
 const editText = async (req, res) => {
@@ -199,65 +489,37 @@ const editText = async (req, res) => {
     return res.status(400).json({ message: "Action and text are required" });
   }
 
-  // Check AI limits
   const user = await checkAILimit(req, res);
   if (!user) return;
-
-  // If no API Key is set, return mock editing fallback
-  if (!ai) {
-    console.log("GEMINI_API_KEY not configured. Returning mock editing fallback.");
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-
-    let result = "";
-    if (action === "rewrite") {
-      result = `<p>${text.replace(/<[^>]*>/g, "")}</p>\n<p><em>(AI rewritten for enhanced clarity and flow)</em></p>`;
-    } else if (action === "expand") {
-      result = `${text}\n<p>Additionally, when implementing these components, developers must pay close attention to visual feedback mechanisms, accessibility tags, and cross-browser responsiveness. Ensuring these elements are locked in early guarantees clean, scalable production modules.</p>`;
-    } else if (action === "shorten") {
-      const cleanText = text.replace(/<[^>]*>/g, "");
-      result = `<p>${cleanText.substring(0, Math.min(cleanText.length, 180))}...</p>\n<p><em>(AI condensed and summarized draft)</em></p>`;
-    } else if (action === "grammar") {
-      result = `${text}\n<p><em>(AI audited spelling, grammar, and style metrics: 0 issues found)</em></p>`;
-    } else if (action === "tone") {
-      result = `<p><strong>[Tone: ${tone || "Professional"}]</strong></p>\n${text}`;
-    } else if (action === "chat") {
-      result = `<h4>AI Assistant Response:</h4>\n<p>Based on your query "<strong>${instruction}</strong>", here is an expansion block:</p>\n<ul>\n  <li><strong>Core Objective</strong>: Focus on clean visual structures.</li>\n  <li><strong>Writing Style</strong>: Consistent guidelines improve readability.</li>\n</ul>`;
-    }
-    await incrementAIUsage(user._id);
-    return res.json({ content: result });
-  }
 
   try {
     let prompt = "";
     if (action === "rewrite") {
-      prompt = `Rewrite the following text to make it more engaging, clear, and professional. Return HTML output (such as <p>, <h2>, <strong>, etc.) directly. Do NOT use markdown.
-Text to rewrite: "${text}"`;
+      prompt = `Rewrite the following text to make it more engaging, clear, and professional. Return HTML output directly. Do NOT use markdown.\nText: "${text}"`;
     } else if (action === "expand") {
-      prompt = `Expand the following text by adding more detail, explanations, and context. Write 1 or 2 extra paragraphs. Return HTML output directly. Do NOT use markdown.
-Text to expand: "${text}"`;
+      prompt = `Expand the following text with rich detail and examples. Return HTML output directly.\nText: "${text}"`;
     } else if (action === "shorten") {
-      prompt = `Shorten the following text to make it extremely concise and direct. Keep only the main points. Return HTML output directly. Do NOT use markdown.
-Text to shorten: "${text}"`;
+      prompt = `Shorten the following text to be punchy and direct while keeping core insights. Return HTML output directly.\nText: "${text}"`;
     } else if (action === "grammar") {
-      prompt = `Fix any grammar, spelling, punctuation, or style errors in the following text. Polish the writing without changing the core meaning. Return HTML output directly. Do NOT use markdown.
-Text to fix: "${text}"`;
+      prompt = `Fix all grammar, punctuation, and style errors in the following text. Return HTML output directly.\nText: "${text}"`;
     } else if (action === "tone") {
-      prompt = `Rewrite the following text to match a "${tone || "Professional"}" tone. Return HTML output directly. Do NOT use markdown.
-Text: "${text}"`;
+      prompt = `Rewrite the following text in a "${tone || "Professional"}" tone. Return HTML output directly.\nText: "${text}"`;
     } else if (action === "chat") {
-      prompt = `You are a helpful AI writing assistant. Answer this query: "${instruction}"
-Context chapter content: "${text}"
-
-Provide your answer directly, formatted as clean HTML (with headings, paragraphs, lists, etc. if helpful). Do NOT use markdown.`;
+      prompt = `You are a world-class AI book editor. Answer this query: "${instruction}"\nContext chapter content:\n"${text}"\nProvide your response formatted as clean HTML. Do NOT use markdown.`;
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.6-flash",
       contents: prompt,
     });
 
+    let result = response.text.trim();
+    if (result.startsWith("```")) {
+      result = result.replace(/^```(?:html)?\s*/i, "").replace(/```$/, "").trim();
+    }
+
     await incrementAIUsage(user._id);
-    res.json({ content: response.text });
+    res.json({ content: result });
   } catch (error) {
     console.error("AI Edit text error:", error);
     res.status(500).json({ message: "AI Text processing failed", error: error.message });
@@ -274,17 +536,14 @@ const generateCoverImage = async (req, res) => {
     return res.status(400).json({ message: "A cover description prompt is required" });
   }
 
-  // Check AI limits
   const user = await checkAILimit(req, res);
   if (!user) return;
 
   try {
-    // Build the Pollinations.ai image generation URL
     const seed = Math.floor(Math.random() * 100000);
     const enhancedPrompt = `Professional book cover art, high quality, editorial design: ${prompt}`;
     const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=600&height=800&enhance=true&seed=${seed}&nologo=true`;
 
-    // Download the image from Pollinations
     const fileName = `cover-${Date.now()}-${seed}.jpg`;
     const filePath = path.join(coversDir, fileName);
 
@@ -295,7 +554,6 @@ const generateCoverImage = async (req, res) => {
         }
         const client = url.startsWith("https") ? https : http;
         client.get(url, (response) => {
-          // Follow redirects
           if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
             return fetchImage(response.headers.location, redirectCount + 1);
           }
@@ -314,10 +572,8 @@ const generateCoverImage = async (req, res) => {
       fetchImage(imageUrl);
     });
 
-    // Increment AI usage
     await incrementAIUsage(user._id);
 
-    // Return the local server URL for the saved cover
     const serverUrl = `http://localhost:${process.env.PORT || 5000}/Backend/uploads/covers/${fileName}`;
     
     res.json({
@@ -331,8 +587,13 @@ const generateCoverImage = async (req, res) => {
 };
 
 module.exports = {
+  generateBook,
   generateOutline,
   generateChapter,
+  editContent,
+  editSelection,
+  reviewContent,
+  generateExercises,
   editText,
   generateCoverImage,
 };

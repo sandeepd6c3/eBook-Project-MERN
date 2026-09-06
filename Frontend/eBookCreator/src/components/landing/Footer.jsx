@@ -1,6 +1,5 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import Button from "../ui/Button";
 
 const Footer = () => {
   const location = useLocation();
@@ -14,120 +13,107 @@ const Footer = () => {
   };
 
   return (
-    <footer className="mt-auto bg-bg-secondary border-t border-border-primary transition-colors duration-250">
+    <footer className="bg-bg-secondary border-t border-border-primary transition-colors duration-250">
       
-      {/* 1. Newsletter Subscribe Section */}
-      <section className="py-16 bg-bg-primary border-b border-border-primary text-center">
-        <div className="max-w-xl mx-auto px-6">
-          <h2 className="font-display font-normal text-2xl sm:text-3xl text-text-primary mb-2">
-            Subscribe For Free Access
+      {/* 1. Final Call-to-Action Section */}
+      <section className="py-20 bg-bg-primary border-b border-border-primary text-center">
+        <div className="max-w-2xl mx-auto px-6">
+          <h2 className="font-display text-3xl sm:text-4xl text-text-primary tracking-tight mb-4">
+            Start writing your book today.
           </h2>
-          <p className="text-text-secondary text-xs mb-8 max-w-sm mx-auto leading-relaxed">
-            Join our mailing list to receive product updates, layout templates, and free AI credits.
+          <p className="text-text-secondary text-sm sm:text-base mb-8 max-w-lg mx-auto leading-relaxed">
+            Create an account in seconds. Plan your structure, draft in-depth chapters, and export publication-ready documents.
           </p>
-          
-          <form className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto" onSubmit={(e) => e.preventDefault()}>
-            <input 
-              type="email" 
-              placeholder="Your Email" 
-              className="flex-grow border border-border-primary px-4 py-3 text-xs rounded-none focus:outline-none focus:border-text-primary text-text-primary bg-bg-secondary"
-              required
-            />
-            <Button type="submit" variant="primary" className="text-[10px] tracking-widest font-bold py-3 px-6 rounded-none">
-              Subscribe
-            </Button>
-          </form>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link
+              to="/signup"
+              className="w-full sm:w-auto px-6 py-3 rounded-lg bg-text-primary text-bg-primary text-xs sm:text-sm font-semibold hover:opacity-90 transition-opacity shadow-sm"
+            >
+              Create your eBook Free
+            </Link>
+            <Link
+              to="/login"
+              className="w-full sm:w-auto px-6 py-3 rounded-lg bg-bg-secondary border border-border-primary text-text-primary text-xs sm:text-sm font-medium hover:bg-bg-tertiary transition-colors"
+            >
+              Sign In to Account
+            </Link>
+          </div>
         </div>
       </section>
- 
-      {/* 2. Main Footer Links & Info */}
-      <div className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 md:grid-cols-12 gap-10">
+
+      {/* 2. Main Footer Navigation */}
+      <div className="max-w-6xl mx-auto px-6 py-14 grid grid-cols-1 md:grid-cols-12 gap-8 text-left">
         
-        {/* Left branding details */}
-        <div className="md:col-span-4 flex flex-col items-start text-left">
-          <Link to="/" onClick={handleLogoClick} className="flex items-center gap-2 mb-4">
-            <div className="h-8 w-8 rounded bg-gradient-to-tr from-brand-purple to-brand-blue flex items-center justify-center">
-              <svg className="w-4 h-4 text-white stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18 18.246 18.477 16.5 18.477s-3.332.477-4.5 1.253" />
-              </svg>
+        {/* Brand Column */}
+        <div className="md:col-span-4 flex flex-col items-start">
+          <Link to="/" onClick={handleLogoClick} className="flex items-center gap-2 mb-3">
+            <div className="w-7 h-7 rounded bg-text-primary text-bg-primary flex items-center justify-center font-serif font-bold text-sm">
+              e
             </div>
-            <span className="font-display font-extrabold text-lg tracking-tight text-text-primary">
+            <span className="font-sans font-semibold text-base tracking-tight text-text-primary">
               eBook<span className="text-brand-purple">AI</span>
             </span>
           </Link>
-          <p className="text-xs text-text-secondary leading-relaxed max-w-xs mb-6">
-            An automated AI content generation pipeline converting raw ideas into fully written, illustrated, styled, and publication-ready digital books.
+          <p className="text-xs text-text-secondary leading-relaxed max-w-xs mb-4">
+            A modern, thoughtful platform for writing, editing, and publishing digital books with intelligent AI assistance.
           </p>
-          <span className="text-[10px] font-bold text-text-muted tracking-wider font-mono">
-            HEADQUARTERS // IND, GGN
-          </span>
         </div>
 
-        {/* Right columns */}
-        <div className="md:col-span-8 grid grid-cols-2 sm:grid-cols-4 gap-8 text-left">
-          {/* Column 1 */}
+        {/* Links Grid */}
+        <div className="md:col-span-8 grid grid-cols-2 sm:grid-cols-3 gap-6">
           <div>
-            <h4 className="text-[10px] font-bold text-text-primary tracking-widest uppercase mb-4">Platform</h4>
+            <h4 className="text-xs font-semibold text-text-primary uppercase tracking-wider mb-3">
+              Platform
+            </h4>
             <ul className="space-y-2 text-xs text-text-secondary">
-              <li><a href="#features" className="hover:text-brand-blue transition-colors">AI Outlining</a></li>
-              <li><a href="#workflow" className="hover:text-brand-blue transition-colors">Drafting Engine</a></li>
-              <li><a href="#tech" className="hover:text-brand-blue transition-colors">Style Locking</a></li>
-              <li><a href="#features" className="hover:text-brand-blue transition-colors">Export Suite</a></li>
+              <li><a href="#features" className="hover:text-text-primary transition-colors">Features</a></li>
+              <li><a href="#workflow" className="hover:text-text-primary transition-colors">Workflow</a></li>
+              <li><a href="#preview" className="hover:text-text-primary transition-colors">Product Studio</a></li>
+              <li><a href="#use-cases" className="hover:text-text-primary transition-colors">Use Cases</a></li>
             </ul>
           </div>
 
-
-          {/* Column 2 */}
           <div>
-            <h4 className="text-[10px] font-bold text-text-primary tracking-widest uppercase mb-4">Resources</h4>
+            <h4 className="text-xs font-semibold text-text-primary uppercase tracking-wider mb-3">
+              Formats
+            </h4>
             <ul className="space-y-2 text-xs text-text-secondary">
-              <li><a href="#workflow" className="hover:text-brand-blue transition-colors">Documentation</a></li>
-              <li><a href="#features" className="hover:text-brand-blue transition-colors">Gemini API</a></li>
-              <li><a href="#tech" className="hover:text-brand-blue transition-colors">Imagen Prompts</a></li>
-              <li><a href="#workflow" className="hover:text-brand-blue transition-colors">System Status</a></li>
+              <li><a href="#features" className="hover:text-text-primary transition-colors">PDF Export</a></li>
+              <li><a href="#features" className="hover:text-text-primary transition-colors">EPUB for Kindle</a></li>
+              <li><a href="#features" className="hover:text-text-primary transition-colors">Microsoft Word</a></li>
+              <li><a href="#features" className="hover:text-text-primary transition-colors">Cover Studio</a></li>
             </ul>
           </div>
 
-          {/* Column 3 */}
           <div>
-            <h4 className="text-[10px] font-bold text-text-primary tracking-widest uppercase mb-4">Company</h4>
+            <h4 className="text-xs font-semibold text-text-primary uppercase tracking-wider mb-3">
+              Account
+            </h4>
             <ul className="space-y-2 text-xs text-text-secondary">
-              <li><a href="#workflow" className="hover:text-brand-blue transition-colors">About Us</a></li>
-              <li><a href="#features" className="hover:text-brand-blue transition-colors">Careers</a></li>
-              <li><a href="#tech" className="hover:text-brand-blue transition-colors">Office</a></li>
-              <li><a href="#workflow" className="hover:text-brand-blue transition-colors">Press Kit</a></li>
-            </ul>
-          </div>
-
-          {/* Column 4 */}
-          <div>
-            <h4 className="text-[10px] font-bold text-text-primary tracking-widest uppercase mb-4">Support</h4>
-            <ul className="space-y-2 text-xs text-text-secondary">
-              <li><Link to="/login" className="hover:text-brand-blue transition-colors">Privacy Policy</Link></li>
-              <li><Link to="/login" className="hover:text-brand-blue transition-colors">Disclaimer</Link></li>
-              <li><a href="/#faq" className="hover:text-brand-blue transition-colors">FAQ</a></li>
-              <li><Link to="/login" className="hover:text-brand-blue transition-colors">Terms of Service</Link></li>
+              <li><Link to="/login" className="hover:text-text-primary transition-colors">Sign In</Link></li>
+              <li><Link to="/signup" className="hover:text-text-primary transition-colors">Get Started</Link></li>
+              <li><Link to="/dashboard" className="hover:text-text-primary transition-colors">Dashboard</Link></li>
+              <li><a href="#faq" className="hover:text-text-primary transition-colors">Help & FAQ</a></li>
             </ul>
           </div>
         </div>
 
       </div>
 
-      {/* 3. Bottom copyright bar */}
-      <div className="border-t border-border-primary bg-bg-tertiary/50 py-6 text-center">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-[10px] text-text-muted">
-            Copyright © 2026 eBookAI. All Rights Reserved.
-          </p>
-          <div className="flex items-center gap-4 text-[10px] text-text-muted">
-            <a href="#features" className="hover:text-brand-blue transition-colors">Facebook</a>
+      {/* 3. Bottom Copyright Bar */}
+      <div className="border-t border-border-primary py-6 bg-bg-primary/50">
+        <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-text-muted">
+          <p>© {new Date().getFullYear()} eBookAI. All rights reserved.</p>
+          <div className="flex items-center gap-4">
+            <a href="#faq" className="hover:text-text-primary transition-colors">Privacy</a>
             <span>•</span>
-            <a href="#features" className="hover:text-brand-blue transition-colors">Twitter</a>
+            <a href="#faq" className="hover:text-text-primary transition-colors">Terms</a>
             <span>•</span>
-            <a href="#features" className="hover:text-brand-blue transition-colors">LinkedIn</a>
+            <a href="#faq" className="hover:text-text-primary transition-colors">Contact</a>
           </div>
         </div>
       </div>
+
     </footer>
   );
 };

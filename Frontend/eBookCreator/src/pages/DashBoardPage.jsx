@@ -7,9 +7,12 @@ import SelectField from "../components/ui/SelectField";
 import Modal from "../components/ui/Modal";
 import Button from "../components/ui/Button";
 import ThemeSwitcher from "../components/ui/ThemeSwitcher";
+import InteractiveTilt from "../components/ui/InteractiveTilt";
+import BookCover from "../components/Editor/BookCover";
 import toast from "react-hot-toast";
 
 const API_BASE = "http://localhost:5000/api/books";
+const API_AI = "http://localhost:5000/api/ai";
 
 const DashboardPage = () => {
   const { user, logout } = useAuth();
@@ -20,13 +23,25 @@ const DashboardPage = () => {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all"); // "all" | "draft" | "published"
+  const [sortBy, setSortBy] = useState("recent"); // "recent" | "newest" | "alpha" | "progress"
 
-  // Modal States
+  // Quick Action AI State
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiAudience, setAiAudience] = useState("General Learners");
+  const [aiTone, setAiTone] = useState("Friendly & Clear");
+  const [aiLength, setAiLength] = useState("5 Chapters");
+  const [aiDifficulty, setAiDifficulty] = useState("Beginner");
+  const [aiGenerating, setAiGenerating] = useState(false);
+
+  // Modals & Menu States
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isRenameOpen, setIsRenameOpen] = useState(false);
   const [selectedBook, setSelectedBook] = useState(null);
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [renameTitle, setRenameTitle] = useState("");
+  const [activeMenuId, setActiveMenuId] = useState(null);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
   // Create Form State
   const [formValues, setFormValues] = useState({
@@ -38,7 +53,7 @@ const DashboardPage = () => {
   const [formErrors, setFormErrors] = useState({});
   const [actionLoading, setActionLoading] = useState(false);
 
-  // Categories list
+  // Categories
   const categories = [
     "Technology & Coding",
     "Business & Startups",
@@ -48,7 +63,7 @@ const DashboardPage = () => {
     "History & Science",
   ];
 
-  // Writing styles list
+  // Writing Styles
   const writingStyles = [
     "Conversational",
     "Professional & Formal",
@@ -61,18 +76,13 @@ const DashboardPage = () => {
     fetchBooks();
   }, []);
 
-  // Open creation modal if requested via route state
+  // Handle open creation modal if navigated with state
   useEffect(() => {
     if (location.state?.openCreateModal) {
-      handleCreateClick();
-      // Clean up state to prevent reopening on reload
+      setIsCreateOpen(true);
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location, navigate]);
-
-  const handleCreateClick = () => {
-    setIsCreateOpen(true);
-  };
 
   const fetchBooks = async () => {
     setLoading(true);
@@ -85,10 +95,7 @@ const DashboardPage = () => {
         },
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch books");
-      }
-
+      if (!response.ok) throw new Error("Failed to fetch books");
       const data = await response.json();
       setBooks(data);
     } catch (err) {
@@ -105,29 +112,80 @@ const DashboardPage = () => {
     navigate("/login");
   };
 
-  // Input change for creation form
+  // Greeting dynamic
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  };
+
+  // Helper to calculate words & progress
+  const getBookStats = (b) => {
+    const chapters = b.chapters || [];
+    const totalWords = chapters.reduce((acc, ch) => {
+      const text = ch.body ? ch.body.replace(/<[^>]*>/g, " ").trim() : "";
+      return acc + (text ? text.split(/\s+/).filter(Boolean).length : 0);
+    }, 0);
+
+    const completedChapters = chapters.filter((ch) => ch.body && ch.body.length > 100).length;
+    const progress = chapters.length > 0 ? Math.round((completedChapters / chapters.length) * 100) : 0;
+
+    return { totalWords, completedChapters, progress };
+  };
+
+  // Helper to parse description details
+  const parseDescription = (desc) => {
+    if (!desc) return { category: "General", style: "Conversational", prompt: "" };
+    const categoryMatch = desc.match(/Category:\s*(.+)/i);
+    const styleMatch = desc.match(/Style:\s*(.+)/i);
+    const promptMatch = desc.match(/Prompt:\s*([\s\S]+)/i);
+
+    let prompt = promptMatch ? promptMatch[1].trim() : desc;
+    if (!promptMatch) {
+      prompt = prompt.replace(/Category:\s*.+/gi, "").replace(/Style:\s*.+/gi, "").trim();
+    }
+
+    return {
+      category: categoryMatch ? categoryMatch[1].split("\n")[0].trim() : "General",
+      style: styleMatch ? styleMatch[1].split("\n")[0].trim() : "Conversational",
+      prompt: prompt || desc,
+    };
+  };
+
+  // Relative time helper
+  const getRelativeTime = (dateString) => {
+    if (!dateString) return "Recently";
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInMins = Math.floor(diffInMs / 60000);
+    const diffInHours = Math.floor(diffInMins / 60);
+    const diffInDays = Math.floor(diffInHours / 24);
+
+    if (diffInMins < 1) return "Just now";
+    if (diffInMins < 60) return `${diffInMins}m ago`;
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    if (diffInDays < 7) return `${diffInDays}d ago`;
+    return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  };
+
+  // Handle Form Change & Validation
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormValues((prev) => ({ ...prev, [name]: value }));
-    if (formErrors[name]) {
-      setFormErrors((prev) => ({ ...prev, [name]: "" }));
-    }
+    if (formErrors[name]) setFormErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  // Validate creation form
   const validateForm = () => {
     const errors = {};
-    if (!formValues.title.trim()) {
-      errors.title = "Book title is required";
-    }
-    if (!formValues.prompt.trim()) {
-      errors.prompt = "Please describe the initial idea or outline";
-    }
+    if (!formValues.title.trim()) errors.title = "Book title is required";
+    if (!formValues.prompt.trim()) errors.prompt = "Please describe the book concept";
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  // Handle eBook Creation
+  // Standard Manual Creation
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -136,7 +194,6 @@ const DashboardPage = () => {
     const toastId = toast.loading("Initializing eBook draft...");
     const token = localStorage.getItem("token");
 
-    // Serialize details inside the description field
     const serializedDescription = `Category: ${formValues.category}\nStyle: ${formValues.writingStyle}\n\nPrompt: ${formValues.prompt}`;
 
     try {
@@ -161,31 +218,150 @@ const DashboardPage = () => {
       toast.success("eBook created successfully!", { id: toastId });
       setBooks((prev) => [newBook, ...prev]);
       setIsCreateOpen(false);
-      // Reset form
       setFormValues({
         title: "",
         category: "Technology & Coding",
         writingStyle: "Conversational",
         prompt: "",
       });
+      navigate(`/editor?bookId=${newBook._id}`);
     } catch (err) {
-      toast.error(err.message || "Could not create eBook. Try again.", {
-        id: toastId,
-      });
+      toast.error(err.message || "Could not create eBook. Try again.", { id: toastId });
     } finally {
       setActionLoading(false);
     }
   };
 
-  // Open Delete confirmation dialog
-  const openDeleteDialog = (book, e) => {
-    e.stopPropagation();
+  // Fast AI Generator from Dashboard AI Box
+  const handleAIGenerate = async (e) => {
     e.preventDefault();
-    setSelectedBook(book);
-    setIsDeleteOpen(true);
+    if (!aiPrompt.trim() || aiGenerating) return;
+
+    setAiGenerating(true);
+    const toastId = toast.loading("AI is structuring your complete book...");
+    const token = localStorage.getItem("token");
+
+    try {
+      const aiRes = await fetch(`${API_AI}/generate-book`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          prompt: aiPrompt.trim(),
+          difficulty: aiDifficulty,
+          tone: aiTone,
+          contentType: "Practical Guide",
+          targetAudience: aiAudience,
+          chaptersCount: parseInt(aiLength) || 5,
+        }),
+      });
+
+      if (!aiRes.ok) throw new Error("AI outline structuring failed");
+      const plan = await aiRes.json();
+
+      const mappedChapters = (plan.chapters || []).map((ch, idx) => ({
+        title: ch.title,
+        body: "",
+        status: "Draft",
+        wordCount: 0,
+        order: idx,
+      }));
+
+      const saveRes = await fetch(API_BASE, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: plan.title || aiPrompt,
+          subtitle: plan.subtitle || "",
+          description: plan.description || `Audience: ${aiAudience}, Tone: ${aiTone}`,
+          chapters: mappedChapters,
+        }),
+      });
+
+      if (!saveRes.ok) throw new Error("Failed to save generated book");
+      const newBook = await saveRes.json();
+
+      toast.success("eBook structured and ready to edit! ✨", { id: toastId });
+      setBooks((prev) => [newBook, ...prev]);
+      setAiPrompt("");
+      navigate(`/editor?bookId=${newBook._id}`);
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || "Failed to generate book with AI.", { id: toastId });
+    } finally {
+      setAiGenerating(false);
+    }
   };
 
-  // Confirm eBook Deletion
+  // Duplicate Book Action
+  const handleDuplicateBook = async (bookToDup) => {
+    const token = localStorage.getItem("token");
+    const toastId = toast.loading("Duplicating eBook...");
+
+    try {
+      const response = await fetch(API_BASE, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: `${bookToDup.title} (Copy)`,
+          subtitle: bookToDup.subtitle || "",
+          description: bookToDup.description || "",
+          coverImage: bookToDup.coverImage || "",
+          chapters: bookToDup.chapters || [],
+          settings: bookToDup.settings || {},
+          exportConfig: bookToDup.exportConfig || {},
+        }),
+      });
+
+      if (!response.ok) throw new Error("Duplication failed");
+      const newBook = await response.json();
+      setBooks((prev) => [newBook, ...prev]);
+      toast.success("eBook duplicated successfully!", { id: toastId });
+    } catch (err) {
+      toast.error("Failed to duplicate eBook.", { id: toastId });
+    }
+  };
+
+  // Rename Book Action
+  const handleRenameConfirm = async (e) => {
+    e.preventDefault();
+    if (!selectedBook || !renameTitle.trim()) return;
+
+    setActionLoading(true);
+    const token = localStorage.getItem("token");
+
+    try {
+      const response = await fetch(`${API_BASE}/${selectedBook._id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ title: renameTitle.trim() }),
+      });
+
+      if (!response.ok) throw new Error("Failed to rename eBook");
+      const updated = await response.json();
+      setBooks((prev) => prev.map((b) => (b._id === updated._id ? updated : b)));
+      toast.success("eBook renamed!");
+      setIsRenameOpen(false);
+      setSelectedBook(null);
+    } catch (err) {
+      toast.error("Could not rename eBook.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Delete Book Action
   const handleDeleteConfirm = async () => {
     if (!selectedBook) return;
 
@@ -196,14 +372,10 @@ const DashboardPage = () => {
     try {
       const response = await fetch(`${API_BASE}/${selectedBook._id}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to delete eBook");
-      }
+      if (!response.ok) throw new Error("Failed to delete eBook");
 
       toast.success("eBook deleted successfully", { id: toastId });
       setBooks((prev) => prev.filter((b) => b._id !== selectedBook._id));
@@ -216,492 +388,634 @@ const DashboardPage = () => {
     }
   };
 
-  // Helper to extract category, style and prompt from description string
-  const parseDescription = (desc) => {
-    if (!desc) {
-      return {
-        category: "General",
-        style: "Conversational",
-        prompt: "",
-      };
-    }
-
-    const categoryMatch = desc.match(/Category:\s*(.+)/i);
-    const styleMatch = desc.match(/Style:\s*(.+)/i);
-    const promptMatch = desc.match(/Prompt:\s*([\s\S]+)/i);
-
-    let prompt = promptMatch ? promptMatch[1].trim() : desc;
-
-    if (!promptMatch) {
-      prompt = prompt
-        .replace(/Category:\s*.+/gi, "")
-        .replace(/Style:\s*.+/gi, "")
-        .trim();
-    }
-
-    return {
-      category: categoryMatch ? categoryMatch[1].split("\n")[0].trim() : "General",
-      style: styleMatch ? styleMatch[1].split("\n")[0].trim() : "Conversational",
-      prompt: prompt || desc,
-    };
-  };
-
-  // Helper to format relative time dynamically
-  const getRelativeTime = (dateString) => {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInMs = now.getTime() - date.getTime();
-    const diffInMins = Math.floor(diffInMs / 60000);
-    const diffInHours = Math.floor(diffInMins / 60);
-    const diffInDays = Math.floor(diffInHours / 24);
-
-    if (diffInMins < 1) {
-      return "Updated just now";
-    }
-    if (diffInMins < 60) {
-      return `Updated ${diffInMins} ${diffInMins === 1 ? "minute" : "minutes"} ago`;
-    }
-    if (diffInHours < 24) {
-      return `Updated ${diffInHours} ${diffInHours === 1 ? "hour" : "hours"} ago`;
-    }
-    if (diffInDays < 7) {
-      return `Updated ${diffInDays} ${diffInDays === 1 ? "day" : "days"} ago`;
-    }
-
-    return `Updated on ${date.toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    })}`;
-  };
-
-  // Statistics calculations
+  // Metrics calculation
   const totalBooks = books.length;
   const totalChapters = books.reduce((acc, curr) => acc + (curr.chapters?.length || 0), 0);
   const publishedBooks = books.filter((b) => b.isPublished).length;
+  const draftBooks = books.filter((b) => !b.isPublished).length;
 
-  // Filtered books catalog
-  const filteredBooks = books.filter((book) => {
-    const matchesSearch = book.title.toLowerCase().includes(searchQuery.toLowerCase());
-    if (!categoryFilter) return matchesSearch;
+  // Search & Filter & Sort Logic
+  const filteredBooks = books
+    .filter((book) => {
+      const matchesSearch =
+        book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (book.description && book.description.toLowerCase().includes(searchQuery.toLowerCase()));
 
-    const { category } = parseDescription(book.description);
-    return matchesSearch && category === categoryFilter;
-  });
+      if (statusFilter === "draft") return matchesSearch && !book.isPublished;
+      if (statusFilter === "published") return matchesSearch && book.isPublished;
+      return matchesSearch;
+    })
+    .sort((a, b) => {
+      if (sortBy === "newest") return new Date(b.createdAt) - new Date(a.createdAt);
+      if (sortBy === "alpha") return a.title.localeCompare(b.title);
+      if (sortBy === "progress") {
+        return getBookStats(b).progress - getBookStats(a).progress;
+      }
+      return new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt);
+    });
 
-  // Separate drafts and published books for section splits
-  const draftBooks = filteredBooks.filter((b) => !b.isPublished);
-  const publishedBooksList = filteredBooks.filter((b) => b.isPublished);
-
-  // Render cover component
-  const BookCover = ({ title, category, style }) => (
-    <div className="h-44 bg-bg-tertiary border-b border-border-primary flex flex-col justify-between p-5 relative overflow-hidden select-none transition-colors duration-250">
-      {/* Decorative publishing grid frame */}
-      <div className="absolute inset-4 border border-border-primary rounded-lg pointer-events-none"></div>
-      
-      <span className="text-[8px] font-extrabold uppercase tracking-widest text-text-muted z-10 text-left">
-        {style}
-      </span>
-
-      <h4 className="font-display font-light text-text-primary text-base leading-tight text-center max-w-[80%] mx-auto z-10 line-clamp-3">
-        {title}
-      </h4>
-
-      <span className="text-[8px] font-bold uppercase tracking-wider text-text-muted z-10 text-center">
-        {category}
-      </span>
-    </div>
-  );
+  // Most recent active book for the "Continue Writing" hero showcase
+  const mostRecentBook = books.length > 0 ? books[0] : null;
 
   return (
-    <div className="min-h-screen bg-bg-primary text-text-primary font-sans transition-colors duration-250">
-      {/* Navbar Header */}
-      <header className="sticky top-0 z-40 bg-bg-secondary border-b border-border-primary shadow-xs transition-colors duration-250">
-        <div className="max-w-7xl mx-auto px-6 h-18 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-slate-700 to-slate-800 flex items-center justify-center text-white">
-              <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18 18.246 18.477 16.5 18.477s-3.332.477-4.5 1.253"
-                />
-              </svg>
-            </div>
-            <span className="font-display font-bold text-lg tracking-tight text-text-primary">
-              eBook<span className="text-text-secondary">AI</span>
-            </span>
-          </Link>
+    <div className="min-h-screen bg-bg-primary text-text-primary font-sans transition-colors duration-250 pb-20">
+      
+      {/* 1. CLEAN COMPACT HEADER */}
+      <header className="sticky top-0 z-40 bg-bg-primary/95 backdrop-blur-md border-b border-border-primary transition-colors duration-250">
+        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+          
+          {/* Logo & Navigation */}
+          <div className="flex items-center gap-8">
+            <Link to="/" className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-text-primary text-bg-primary flex items-center justify-center font-serif font-bold text-base shadow-xs">
+                e
+              </div>
+              <span className="font-sans font-semibold text-base tracking-tight text-text-primary">
+                eBook<span className="text-brand-purple">AI</span>
+              </span>
+            </Link>
 
+            <nav className="hidden md:flex items-center gap-6 text-xs font-medium text-text-secondary">
+              <Link to="/dashboard" className="text-text-primary font-semibold py-1 border-b-2 border-brand-purple">
+                Dashboard
+              </Link>
+              <a href="#your-books" className="hover:text-text-primary transition-colors py-1">
+                Your Books
+              </a>
+              <Link to="/discover" className="hover:text-text-primary transition-colors py-1">
+                Discover
+              </Link>
+              <Link to="/analytics" className="hover:text-text-primary transition-colors py-1">
+                Analytics
+              </Link>
+              <Link to="/profile" className="hover:text-text-primary transition-colors py-1">
+                Profile
+              </Link>
+            </nav>
+          </div>
+
+          {/* Right Header Actions */}
           <div className="flex items-center gap-3">
             <ThemeSwitcher />
-            <span className="text-xs font-semibold text-text-secondary hidden sm:inline mr-1">
-              Hello, <strong className="text-text-primary">{user?.username || "Sandeep"}</strong>
-            </span>
-            <Link
-              to="/analytics"
-              className="text-[10px] font-bold uppercase tracking-wider text-text-secondary hover:text-text-primary transition-colors border border-border-primary hover:border-text-primary px-3 py-1.5 rounded-lg cursor-pointer mr-1"
-            >
-              📊 Analytics
-            </Link>
-            <Link
-              to="/discover"
-              className="text-[10px] font-bold uppercase tracking-wider text-text-secondary hover:text-text-primary transition-colors border border-border-primary hover:border-text-primary px-3 py-1.5 rounded-lg cursor-pointer mr-1"
-            >
-              Discover
-            </Link>
-            <Link
-              to="/profile"
-              className="text-[10px] font-bold uppercase tracking-wider text-accent-primary hover:text-accent-hover transition-colors border border-accent-ring hover:border-accent-primary px-3 py-1.5 rounded-lg cursor-pointer bg-accent-primary/10"
-            >
-              Profile
-            </Link>
+            
             <button
-              onClick={handleLogout}
-              className="text-[10px] font-bold uppercase tracking-wider text-text-muted hover:text-text-primary transition-colors border border-border-primary hover:border-text-primary px-3 py-1.5 rounded-lg cursor-pointer"
+              onClick={() => setIsCreateOpen(true)}
+              className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-text-primary text-bg-primary hover:opacity-90 transition-opacity shadow-xs"
             >
-              Log Out
+              <span>+</span>
+              <span>New Book</span>
             </button>
+
+            {/* Profile Avatar & Menu */}
+            <div className="relative">
+              <button
+                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                className="w-8 h-8 rounded-full bg-bg-secondary border border-border-primary flex items-center justify-center font-bold text-xs text-text-primary hover:border-text-muted transition-colors cursor-pointer"
+                title="Account menu"
+              >
+                {user?.username ? user.username.substring(0, 2).toUpperCase() : "ME"}
+              </button>
+
+              {profileDropdownOpen && (
+                <div
+                  className="absolute right-0 mt-2 w-48 bg-bg-primary rounded-xl shadow-xl border border-border-primary py-1.5 z-50 text-left text-xs animate-in fade-in zoom-in-95 duration-150"
+                  onMouseLeave={() => setProfileDropdownOpen(false)}
+                >
+                  <div className="px-3 py-2 border-b border-border-primary mb-1">
+                    <span className="font-semibold block truncate text-text-primary">{user?.username || "User"}</span>
+                    <span className="text-[10px] text-text-muted truncate block">{user?.email || "Signed in"}</span>
+                  </div>
+                  <Link to="/profile" className="block px-3 py-1.5 text-text-secondary hover:bg-bg-secondary hover:text-text-primary">
+                    Profile Settings
+                  </Link>
+                  <Link to="/analytics" className="block px-3 py-1.5 text-text-secondary hover:bg-bg-secondary hover:text-text-primary">
+                    Writing Analytics
+                  </Link>
+                  <div className="border-t border-border-primary my-1"></div>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-3 py-1.5 text-rose-500 hover:bg-rose-500/10 cursor-pointer"
+                  >
+                    Log Out
+                  </button>
+                </div>
+              )}
+            </div>
+
           </div>
+
         </div>
       </header>
 
-      {/* Main Container */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      {/* MAIN CONTAINER */}
+      <main className="max-w-6xl mx-auto px-6 pt-8 space-y-10 text-left">
         
-        {/* Welcome Section */}
-        <div className="mb-8 text-left animate-fadeIn">
-          <h1 className="font-display font-light text-3xl sm:text-4xl text-text-primary tracking-tight mb-1.5">
-            Hello, <span className="font-normal">{user?.username || "Sandeep"}</span> 👋
-          </h1>
-          <p className="text-text-secondary text-xs sm:text-sm font-medium mb-3 leading-relaxed">
-            Continue building amazing eBooks with AI.
-          </p>
-          <div className="text-[9px] uppercase font-bold tracking-widest text-text-muted bg-bg-tertiary border border-border-primary rounded-lg py-1 px-3 inline-block shadow-xs">
-            You have: <strong className="text-text-primary">{totalBooks} {totalBooks === 1 ? "Book" : "Books"}</strong>
-            <span className="mx-2 text-border-primary">|</span>
-            <strong className="text-text-primary">{publishedBooks} Published</strong>
-          </div>
-        </div>
-
-        {/* High-Impact Statistics Grid */}
-        <div className="grid grid-cols-3 gap-5 mb-8">
-          {/* Total Books */}
-          <div className="bg-bg-secondary border border-border-primary rounded-[16px] p-5 shadow-xs flex flex-col justify-between min-h-[110px] text-left transition-colors duration-250">
-            <div>
-              <svg className="w-4.5 h-4.5 text-text-muted mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18 18.246 18.477 16.5 18.477s-3.332.477-4.5 1.253" />
-              </svg>
-              <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-widest block mb-1">
-                Total Books
-              </span>
-            </div>
-            <span className="font-display text-4xl sm:text-5xl font-light text-text-primary leading-none">
-              {String(totalBooks).padStart(2, "0")}
-            </span>
-          </div>
-
-          {/* AI Chapters */}
-          <div className="bg-bg-secondary border border-border-primary rounded-[16px] p-5 shadow-xs flex flex-col justify-between min-h-[110px] text-left transition-colors duration-250">
-            <div>
-              <svg className="w-4.5 h-4.5 text-text-muted mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 002-2h2a2 2 0 002 2m-3 7h3m-3 4h3m-6-4h.01M9 16.01H9" />
-              </svg>
-              <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-widest block mb-1">
-                AI Chapters
-              </span>
-            </div>
-            <span className="font-display text-4xl sm:text-5xl font-light text-text-primary leading-none">
-              {String(totalChapters).padStart(2, "0")}
-            </span>
-          </div>
-
-          {/* Published */}
-          <div className="bg-bg-secondary border border-border-primary rounded-[16px] p-5 shadow-xs flex flex-col justify-between min-h-[110px] text-left transition-colors duration-250">
-            <div>
-              <svg className="w-4.5 h-4.5 text-text-muted mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-widest block mb-1">
-                Published
-              </span>
-            </div>
-            <span className="font-display text-4xl sm:text-5xl font-light text-text-primary leading-none">
-              {String(publishedBooks).padStart(2, "0")}
-            </span>
-          </div>
-        </div>
-
-        {/* Wider Search & Control Bar */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8 bg-bg-secondary border border-border-primary rounded-[16px] p-4 shadow-xs transition-colors duration-250">
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
-            {/* Search Input (450px wide on desktop) */}
-            <div className="w-full sm:w-[450px] relative">
-              <input
-                type="text"
-                placeholder="Search eBooks..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-[42px] pl-10 pr-4 bg-bg-primary text-text-primary border border-border-primary focus:border-accent-primary rounded-xl text-xs font-sans placeholder-text-muted outline-none transition-all duration-250"
-              />
-              <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-            </div>
-
-            {/* Category Dropdown Filter (200px wide on desktop) */}
-            <div className="w-full sm:w-[200px] relative">
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="w-full h-[42px] pl-4 pr-10 bg-bg-primary text-text-primary border border-border-primary focus:border-accent-primary rounded-xl text-xs font-sans outline-none appearance-none cursor-pointer transition-all duration-250"
-              >
-                <option value="" className="bg-bg-primary text-text-primary">All Categories</option>
-                {categories.map((cat, idx) => (
-                  <option key={idx} value={cat} className="bg-bg-primary text-text-primary">
-                    {cat}
-                  </option>
-                ))}
-              </select>
-              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted">
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <Button
-            onClick={handleCreateClick}
-            variant="primary"
-            className="w-full lg:w-auto h-[42px] bg-emerald-700 hover:bg-emerald-600 border-none text-[10px] font-bold tracking-wider rounded-xl transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-sm px-6 py-0 uppercase"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-            </svg>
-            Create Your Next eBook
-          </Button>
-        </div>
-
-        {/* Library Content */}
-        {loading ? (
-          /* Loading Skeletons */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((idx) => (
-              <div key={idx} className="bg-bg-secondary border border-border-primary rounded-[20px] h-[340px] animate-pulse flex flex-col">
-                <div className="h-44 bg-bg-tertiary rounded-t-[20px]"></div>
-                <div className="p-5 flex-1 flex flex-col gap-3">
-                  <div className="h-4 bg-bg-tertiary rounded w-2/3"></div>
-                  <div className="h-3 bg-bg-tertiary rounded w-full"></div>
-                  <div className="h-3 bg-bg-tertiary rounded w-full mt-auto"></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : books.length === 0 ? (
-          /* Main Empty State */
-          <div className="w-full bg-bg-secondary border border-border-primary rounded-[24px] p-10 sm:p-16 text-center shadow-xs flex flex-col items-center max-w-xl mx-auto mt-6 animate-fadeIn transition-colors duration-250">
-            <div className="h-16 w-16 bg-bg-tertiary border border-border-primary text-text-secondary rounded-full flex items-center justify-center mb-6">
-              <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18 18.246 18.477 16.5 18.477s-3.332.477-4.5 1.253" />
-              </svg>
-            </div>
-            <h3 className="font-display font-light text-2xl text-text-primary mb-2">
-              Start Your First Publication
-            </h3>
-            <p className="text-text-secondary text-xs sm:text-sm font-medium mb-8 max-w-sm leading-relaxed">
-              Unlock the power of AI to outline and draft complete eBooks from a single prompt idea.
+        {/* 2. WELCOME & COMPACT SUMMARY */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-border-primary">
+          <div>
+            <h1 className="font-display text-2xl sm:text-3xl text-text-primary tracking-tight mb-1">
+              {getGreeting()}, {user?.username || "Writer"} 👋
+            </h1>
+            <p className="text-text-secondary text-xs sm:text-sm">
+              Pick up where you left off or start something new with AI.
             </p>
-            <Button
-              onClick={handleCreateClick}
-              variant="primary"
-              className="h-[46px] bg-emerald-700 hover:bg-emerald-600 border-none text-[10px] font-bold tracking-wider rounded-xl transition-all duration-300 px-8 uppercase"
-            >
-              Get Started
-            </Button>
           </div>
-        ) : (
-          /* Grid list separated by states */
-          <div className="flex flex-col gap-12 text-left">
-            {/* Section 1: Continue Writing (Drafts) */}
-            {draftBooks.length > 0 && (
-              <div className="animate-fadeIn">
-                <h3 className="font-display font-light text-xl sm:text-2xl text-text-primary tracking-tight mb-6 flex items-center gap-2.5">
-                  Continue Writing
-                  <span className="h-5 px-2 bg-bg-tertiary text-text-secondary rounded-md text-[9px] font-extrabold uppercase tracking-widest flex items-center justify-center border border-border-primary">
-                    Drafts ({draftBooks.length})
-                  </span>
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {draftBooks.map((book) => {
-                    const { category, style, prompt } = parseDescription(book.description);
-                    return (
-                      <div
-                        key={book._id}
-                        className="bg-bg-secondary border border-border-primary rounded-[20px] shadow-xs hover:shadow-lg transition-all duration-300 ease-out overflow-hidden flex flex-col min-h-[380px] group"
-                      >
-                        <BookCover title={book.title} category={category} style={style} />
-                        
-                        <div className="p-5 flex-1 flex flex-col justify-between">
-                          <div>
-                            {/* Meta stats bar */}
-                            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 mb-3 text-text-muted text-[10px] font-medium">
-                              <span className="font-bold text-text-primary uppercase tracking-wider">
-                                {book.chapters?.length || 0} {book.chapters?.length === 1 ? "Chapter" : "Chapters"}
-                              </span>
-                              <span className="text-border-primary">•</span>
-                              <span>
-                                {book.chapters?.length > 0 ? (book.chapters.length * 1250).toLocaleString() + " Words" : "0 Words"}
-                              </span>
-                              <span className="text-border-primary">•</span>
-                              <span className="px-1.5 py-0.5 rounded-md text-[8px] font-extrabold uppercase bg-bg-tertiary border border-border-primary text-text-muted">
-                                Draft
-                              </span>
-                            </div>
-                            
-                            <p className="text-text-secondary text-xs line-clamp-2 leading-relaxed font-medium mb-2">
-                              {prompt || "No prompt specified."}
-                            </p>
+
+          <div className="flex items-center gap-3">
+            <Link
+              to="/discover"
+              className="px-4 py-2.5 rounded-xl bg-bg-secondary border border-border-primary hover:bg-bg-tertiary text-xs font-semibold text-text-secondary hover:text-text-primary transition-colors"
+            >
+              Explore Discover
+            </Link>
+            <button
+              onClick={() => setIsCreateOpen(true)}
+              className="px-4 py-2.5 rounded-xl bg-text-primary text-bg-primary text-xs font-semibold hover:opacity-90 transition-opacity shadow-xs"
+            >
+              + Create New eBook
+            </button>
+          </div>
+        </div>
+
+        {/* COMPACT PROGRESS STATS BAR */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="p-4 rounded-xl bg-bg-secondary border border-border-primary flex flex-col justify-between">
+            <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Total Books</span>
+            <span className="font-display text-2xl sm:text-3xl font-bold text-text-primary mt-1">{totalBooks}</span>
+          </div>
+          <div className="p-4 rounded-xl bg-bg-secondary border border-border-primary flex flex-col justify-between">
+            <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Drafts</span>
+            <span className="font-display text-2xl sm:text-3xl font-bold text-text-primary mt-1">{draftBooks}</span>
+          </div>
+          <div className="p-4 rounded-xl bg-bg-secondary border border-border-primary flex flex-col justify-between">
+            <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Published</span>
+            <span className="font-display text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">{publishedBooks}</span>
+          </div>
+          <div className="p-4 rounded-xl bg-bg-secondary border border-border-primary flex flex-col justify-between">
+            <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">AI Chapters</span>
+            <span className="font-display text-2xl sm:text-3xl font-bold text-brand-purple mt-1">{totalChapters}</span>
+          </div>
+        </div>
+
+        {/* 3. QUICK ACTIONS GRID */}
+        <div className="space-y-3">
+          <span className="text-xs font-bold uppercase tracking-wider text-text-muted block">
+            Quick Actions
+          </span>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <button
+              onClick={() => setIsCreateOpen(true)}
+              className="p-3.5 rounded-xl bg-bg-secondary border border-border-primary hover:border-brand-purple hover:bg-brand-purple/5 transition-all text-left group"
+            >
+              <span className="text-lg mb-1 block">✍️</span>
+              <span className="text-xs font-semibold text-text-primary block group-hover:text-brand-purple">Create eBook</span>
+              <span className="text-[10px] text-text-muted block mt-0.5">Start fresh manual draft</span>
+            </button>
+
+            <a
+              href="#ai-workspace"
+              className="p-3.5 rounded-xl bg-bg-secondary border border-border-primary hover:border-brand-purple hover:bg-brand-purple/5 transition-all text-left group"
+            >
+              <span className="text-lg mb-1 block">✨</span>
+              <span className="text-xs font-semibold text-text-primary block group-hover:text-brand-purple">Generate with AI</span>
+              <span className="text-[10px] text-text-muted block mt-0.5">Structure from a topic</span>
+            </a>
+
+            {mostRecentBook ? (
+              <Link
+                to={`/editor?bookId=${mostRecentBook._id}`}
+                className="p-3.5 rounded-xl bg-bg-secondary border border-border-primary hover:border-brand-purple hover:bg-brand-purple/5 transition-all text-left group"
+              >
+                <span className="text-lg mb-1 block">📖</span>
+                <span className="text-xs font-semibold text-text-primary block group-hover:text-brand-purple">Continue Writing</span>
+                <span className="text-[10px] text-text-muted block mt-0.5 truncate">{mostRecentBook.title}</span>
+              </Link>
+            ) : (
+              <button
+                onClick={() => setIsCreateOpen(true)}
+                className="p-3.5 rounded-xl bg-bg-secondary border border-border-primary text-left opacity-60"
+              >
+                <span className="text-lg mb-1 block">📖</span>
+                <span className="text-xs font-semibold text-text-primary block">Continue Writing</span>
+                <span className="text-[10px] text-text-muted block mt-0.5">No active drafts</span>
+              </button>
+            )}
+
+            <Link
+              to="/discover"
+              className="p-3.5 rounded-xl bg-bg-secondary border border-border-primary hover:border-brand-purple hover:bg-brand-purple/5 transition-all text-left group"
+            >
+              <span className="text-lg mb-1 block">🌍</span>
+              <span className="text-xs font-semibold text-text-primary block group-hover:text-brand-purple">Discover Hub</span>
+              <span className="text-[10px] text-text-muted block mt-0.5">Explore published books</span>
+            </Link>
+          </div>
+        </div>
+
+        {/* 4. CONTINUE WRITING (ACTIVE PROJECT SPOTLIGHT) */}
+        {mostRecentBook && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-text-muted flex items-center gap-1.5">
+                <span>⚡</span>
+                <span>Continue Writing (Active Project)</span>
+              </span>
+              <span className="text-xs text-brand-purple font-semibold">
+                Last edited {getRelativeTime(mostRecentBook.updatedAt || mostRecentBook.createdAt)}
+              </span>
+            </div>
+
+            {(() => {
+              const { totalWords, completedChapters, progress } = getBookStats(mostRecentBook);
+              const { category } = parseDescription(mostRecentBook.description);
+              const coverConfig = mostRecentBook.settings?.coverConfig || { style: "modern", gradient: "linear-gradient(135deg, #1e3a8a, #3b82f6)" };
+              const nextChapterIdx = completedChapters < (mostRecentBook.chapters?.length || 0) ? completedChapters + 1 : mostRecentBook.chapters?.length || 1;
+
+              return (
+                <InteractiveTilt maxTilt={2} scale={1.006} className="w-full">
+                  <div className="p-6 rounded-2xl bg-gradient-to-r from-bg-secondary via-bg-secondary to-bg-primary border border-border-primary hover:border-brand-purple/50 hover:shadow-lg transition-all flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
+                    
+                    <div className="flex items-start gap-5 min-w-0 flex-1">
+                      <div className="w-20 h-28 rounded-r shadow-lg shrink-0 overflow-hidden relative border-l-2 border-black/30">
+                        <BookCover
+                          config={coverConfig}
+                          title={mostRecentBook.title}
+                          author={user?.username || "Author"}
+                          className="w-full h-full text-[6px]"
+                        />
+                      </div>
+
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-brand-purple/10 text-brand-purple border border-brand-purple/20">
+                            {category}
+                          </span>
+                          <span className="text-[10px] text-text-muted font-mono">
+                            {mostRecentBook.chapters?.length || 0} Chapters
+                          </span>
+                        </div>
+
+                        <h2 className="font-display font-bold text-xl sm:text-2xl text-text-primary truncate">
+                          {mostRecentBook.title}
+                        </h2>
+
+                        <div className="space-y-1.5 pt-1">
+                          <div className="flex items-center justify-between text-xs text-text-muted font-mono">
+                            <span>Progress: {progress}% ({completedChapters} of {mostRecentBook.chapters?.length || 0} complete)</span>
+                            <span>{totalWords.toLocaleString()} words</span>
                           </div>
-
-                          <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border-primary">
-                            <Link to={`/editor?bookId=${book._id}`} className="flex-1">
-                              <Button
-                                variant="secondary"
-                                className="w-full h-[36px] text-[9px] font-bold tracking-wider rounded-lg border-border-primary hover:border-text-primary text-text-secondary hover:text-text-primary transition-all flex items-center justify-center uppercase"
-                              >
-                                Continue Writing
-                              </Button>
-                            </Link>
-
-                            <Link to={`/view-book/${book._id}`}>
-                              <Button
-                                variant="secondary"
-                                className="h-[36px] px-4 text-[9px] font-bold tracking-wider rounded-lg border-border-primary hover:border-text-primary text-text-secondary hover:text-text-primary transition-all flex items-center justify-center uppercase"
-                              >
-                                Preview
-                              </Button>
-                            </Link>
-
-                            <button
-                              type="button"
-                              onClick={(e) => openDeleteDialog(book, e)}
-                              title="Delete eBook"
-                              className="h-[36px] w-[36px] border border-border-primary hover:border-red-500 text-text-muted hover:text-red-500 rounded-lg flex items-center justify-center transition-all cursor-pointer bg-transparent"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
+                          <div className="w-full h-2 bg-bg-primary rounded-full overflow-hidden border border-border-primary">
+                            <div
+                              className="h-full bg-gradient-to-r from-brand-purple to-brand-blue rounded-full transition-all duration-500"
+                              style={{ width: `${Math.max(5, progress)}%` }}
+                            ></div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
 
-            {/* Section 2: Recent Activity / Published Books */}
-            {publishedBooksList.length > 0 && (
-              <div className="animate-fadeIn">
-                <h3 className="font-display font-light text-xl sm:text-2xl text-text-primary tracking-tight mb-6 flex items-center gap-2.5">
-                  Published Books
-                  <span className="h-5 px-2 bg-[#10b981]/10 text-[#10b981] rounded-md text-[9px] font-extrabold uppercase tracking-widest flex items-center justify-center border border-[#10b981]/20">
-                    Published ({publishedBooksList.length})
-                  </span>
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {publishedBooksList.map((book) => {
-                    const { category, style, prompt } = parseDescription(book.description);
-                    return (
-                      <div
-                        key={book._id}
-                        className="bg-bg-secondary border border-border-primary rounded-[20px] shadow-xs hover:shadow-lg transition-all duration-300 ease-out overflow-hidden flex flex-col min-h-[380px] group"
+                        <p className="text-xs text-text-secondary pt-1">
+                          Recommended next step: <strong className="text-text-primary">Finish Chapter {nextChapterIdx}</strong>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex md:flex-col items-center md:items-end gap-3 w-full md:w-auto shrink-0 pt-4 md:pt-0 border-t md:border-t-0 border-border-primary">
+                      <Link
+                        to={`/editor?bookId=${mostRecentBook._id}`}
+                        className="w-full md:w-auto px-6 py-3 rounded-xl bg-text-primary text-bg-primary text-xs font-bold hover:opacity-90 transition-opacity shadow-md text-center"
                       >
-                        <BookCover title={book.title} category={category} style={style} />
-                        
-                        <div className="p-5 flex-1 flex flex-col justify-between">
-                          <div>
-                            {/* Meta stats bar */}
-                            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 mb-3 text-text-muted text-[10px] font-medium">
-                              <span className="font-bold text-text-primary uppercase tracking-wider">
-                                {book.chapters?.length || 0} {book.chapters?.length === 1 ? "Chapter" : "Chapters"}
-                              </span>
-                              <span className="text-border-primary">•</span>
-                              <span>
-                                {book.chapters?.length > 0 ? (book.chapters.length * 1250).toLocaleString() + " Words" : "0 Words"}
-                              </span>
-                              <span className="text-border-primary">•</span>
-                              <span className="px-1.5 py-0.5 rounded-md text-[8px] font-extrabold uppercase bg-[#10b981]/10 border border-[#10b981]/25 text-[#10b981]">
-                                Published
-                              </span>
-                            </div>
-                            
-                            <p className="text-text-secondary text-xs line-clamp-2 leading-relaxed font-medium mb-2">
-                              {prompt || "No prompt specified."}
-                            </p>
-                          </div>
+                        Continue Editing Chapter {nextChapterIdx} ➔
+                      </Link>
+                      <Link
+                        to={`/view-book/${mostRecentBook._id}`}
+                        className="w-full md:w-auto px-4 py-2 rounded-xl bg-bg-primary hover:bg-bg-tertiary border border-border-primary text-xs font-semibold text-text-secondary hover:text-text-primary transition-colors text-center"
+                      >
+                        Preview eBook
+                      </Link>
+                    </div>
 
-                          <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border-primary">
-                            <Link to={`/editor?bookId=${book._id}`} className="flex-1">
-                              <Button
-                                variant="secondary"
-                                className="w-full h-[36px] text-[9px] font-bold tracking-wider rounded-lg border-border-primary hover:border-text-primary text-text-secondary hover:text-text-primary transition-all flex items-center justify-center uppercase"
-                              >
-                                Edit Book
-                              </Button>
-                            </Link>
-
-                            <Link to={`/view-book/${book._id}`}>
-                              <Button
-                                variant="secondary"
-                                className="h-[36px] px-4 text-[9px] font-bold tracking-wider rounded-lg border-border-primary hover:border-text-primary text-text-secondary hover:text-text-primary transition-all flex items-center justify-center uppercase"
-                              >
-                                Preview
-                              </Button>
-                            </Link>
-
-                            <button
-                              type="button"
-                              onClick={(e) => openDeleteDialog(book, e)}
-                              title="Delete eBook"
-                              className="h-[36px] w-[36px] border border-border-primary hover:border-red-500 text-text-muted hover:text-red-500 rounded-lg flex items-center justify-center transition-all cursor-pointer bg-transparent"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-            
-            {/* If filters yielded no matches within existing categories */}
-            {draftBooks.length === 0 && publishedBooksList.length === 0 && (
-              <div className="text-center py-10 w-full text-text-muted text-xs sm:text-sm font-medium">
-                No eBooks found matching your search query or filters.
-              </div>
-            )}
+                  </div>
+                </InteractiveTilt>
+              );
+            })()}
           </div>
         )}
+
+        {/* 5. SEPARATE "YOUR BOOKS" SECTION + AI GENERATOR WORKSPACE */}
+        <div id="your-books" className="pt-4 space-y-6">
+          
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border-primary">
+            <div>
+              <h2 className="font-display font-bold text-xl sm:text-2xl text-text-primary tracking-tight">
+                Your Books Library
+              </h2>
+              <p className="text-xs text-text-secondary">
+                Manage, edit, duplicate, and publish your book catalogue.
+              </p>
+            </div>
+
+            <button
+              onClick={() => setIsCreateOpen(true)}
+              className="px-4 py-2 rounded-xl bg-text-primary text-bg-primary text-xs font-semibold hover:opacity-90 transition-opacity shadow-xs self-start sm:self-auto"
+            >
+              + Create eBook
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            {/* Left 8 Cols: Filter & List of All Books */}
+            <div className="lg:col-span-8 space-y-5">
+              
+              {/* Search & Filter Controls */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-bg-secondary p-3 rounded-xl border border-border-primary">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    placeholder="Search your books by title or description..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1.5 bg-bg-primary text-xs text-text-primary rounded-lg border border-border-primary focus:outline-none focus:border-brand-purple placeholder:text-text-muted"
+                  />
+                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted text-xs">🔍</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="text-xs bg-bg-primary border border-border-primary rounded-lg px-2.5 py-1.5 text-text-primary focus:outline-none cursor-pointer"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="draft">Drafts</option>
+                    <option value="published">Published</option>
+                  </select>
+
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="text-xs bg-bg-primary border border-border-primary rounded-lg px-2.5 py-1.5 text-text-primary focus:outline-none cursor-pointer"
+                  >
+                    <option value="recent">Recently Edited</option>
+                    <option value="newest">Newest</option>
+                    <option value="alpha">Alphabetical</option>
+                    <option value="progress">Writing Progress</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Books List Grid */}
+              {loading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-28 bg-bg-secondary rounded-xl border border-border-primary animate-pulse"></div>
+                  ))}
+                </div>
+              ) : filteredBooks.length === 0 ? (
+                <div className="p-12 text-center rounded-2xl bg-bg-secondary border border-border-primary space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-brand-purple/10 text-brand-purple flex items-center justify-center mx-auto text-xl font-bold">
+                    📚
+                  </div>
+                  <h3 className="font-display font-semibold text-base text-text-primary">
+                    No eBooks found
+                  </h3>
+                  <p className="text-xs text-text-secondary max-w-sm mx-auto">
+                    {searchQuery ? "Try refining your search query or filters." : "Start building your library with a new eBook draft."}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3.5">
+                  {filteredBooks.map((b) => {
+                    const { totalWords, completedChapters, progress } = getBookStats(b);
+                    const { category } = parseDescription(b.description);
+                    const coverConfig = b.settings?.coverConfig || { style: "modern", gradient: "linear-gradient(135deg, #1e3a8a, #3b82f6)" };
+
+                    return (
+                      <InteractiveTilt key={b._id} maxTilt={1.5} scale={1.005} className="w-full">
+                        <div className="p-4 rounded-xl bg-bg-secondary border border-border-primary hover:border-text-muted hover:shadow-md transition-all flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between group">
+                          
+                          <div className="flex items-start sm:items-center gap-3.5 min-w-0 flex-1">
+                            <div className="w-12 h-16 rounded-r shadow shrink-0 overflow-hidden relative border-l-2 border-black/30">
+                              <BookCover
+                                config={coverConfig}
+                                title={b.title}
+                                author={user?.username || "Author"}
+                                className="w-full h-full text-[4px]"
+                              />
+                            </div>
+
+                            <div className="min-w-0 flex-1 space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-semibold px-2 py-0.2 rounded bg-bg-primary border border-border-primary text-brand-purple">
+                                  {category}
+                                </span>
+                                <span
+                                  className={`text-[9px] font-semibold px-1.5 py-0.2 rounded ${
+                                    b.isPublished
+                                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                      : "bg-bg-primary text-text-muted border border-border-primary"
+                                  }`}
+                                >
+                                  {b.isPublished ? "Published" : "Draft"}
+                                </span>
+                                <span className="text-[10px] text-text-muted font-mono ml-auto">
+                                  {getRelativeTime(b.updatedAt || b.createdAt)}
+                                </span>
+                              </div>
+
+                              <h3 className="font-display font-bold text-sm sm:text-base text-text-primary truncate">
+                                {b.title}
+                              </h3>
+
+                              <div className="flex items-center gap-3 text-[11px] text-text-muted font-mono">
+                                <span>{b.chapters?.length || 0} Ch. ({completedChapters} done)</span>
+                                <span>•</span>
+                                <span>{totalWords.toLocaleString()} words</span>
+                                <span>•</span>
+                                <span>{progress}% progress</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between w-full sm:w-auto gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-border-primary">
+                            <Link
+                              to={`/editor?bookId=${b._id}`}
+                              className="px-3.5 py-1.5 rounded-lg bg-text-primary text-bg-primary text-xs font-semibold hover:opacity-90 transition-opacity shadow-xs"
+                            >
+                              Edit ➔
+                            </Link>
+
+                            <div className="relative">
+                              <button
+                                onClick={() => setActiveMenuId(activeMenuId === b._id ? null : b._id)}
+                                className="p-1.5 rounded-lg hover:bg-bg-tertiary text-text-muted hover:text-text-primary text-xs"
+                                title="Actions"
+                              >
+                                •••
+                              </button>
+
+                              {activeMenuId === b._id && (
+                                <div
+                                  className="absolute right-0 top-full mt-1 w-36 bg-bg-primary rounded-xl shadow-xl border border-border-primary py-1.5 z-50 text-xs"
+                                  onMouseLeave={() => setActiveMenuId(null)}
+                                >
+                                  <Link
+                                    to={`/view-book/${b._id}`}
+                                    className="block px-3 py-1.5 text-text-secondary hover:bg-bg-secondary hover:text-text-primary"
+                                  >
+                                    Preview Book
+                                  </Link>
+                                  <button
+                                    onClick={() => {
+                                      handleDuplicateBook(b);
+                                      setActiveMenuId(null);
+                                    }}
+                                    className="w-full text-left px-3 py-1.5 text-text-secondary hover:bg-bg-secondary hover:text-text-primary cursor-pointer"
+                                  >
+                                    Duplicate
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedBook(b);
+                                      setRenameTitle(b.title);
+                                      setIsRenameOpen(true);
+                                      setActiveMenuId(null);
+                                    }}
+                                    className="w-full text-left px-3 py-1.5 text-text-secondary hover:bg-bg-secondary hover:text-text-primary cursor-pointer"
+                                  >
+                                    Rename
+                                  </button>
+                                  <div className="border-t border-border-primary my-1"></div>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedBook(b);
+                                      setIsDeleteOpen(true);
+                                      setActiveMenuId(null);
+                                    }}
+                                    className="w-full text-left px-3 py-1.5 text-rose-500 hover:bg-rose-500/10 cursor-pointer"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                        </div>
+                      </InteractiveTilt>
+                    );
+                  })}
+                </div>
+              )}
+
+            </div>
+
+            {/* Right 4 Cols: AI Workspace Box */}
+            <div id="ai-workspace" className="lg:col-span-4 space-y-6">
+              
+              <div className="p-5 rounded-2xl bg-bg-secondary border border-border-primary space-y-4">
+                <div className="flex items-center gap-2 pb-3 border-b border-border-primary">
+                  <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-brand-purple to-brand-blue flex items-center justify-center text-white text-xs">
+                    ✨
+                  </div>
+                  <div>
+                    <h3 className="font-display font-semibold text-sm text-text-primary">Create with AI</h3>
+                    <p className="text-[11px] text-text-muted">Generate full book plan & chapters</p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleAIGenerate} className="space-y-3.5">
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted block mb-1">
+                      What do you want to write?
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={aiPrompt}
+                      onChange={(e) => setAiPrompt(e.target.value)}
+                      placeholder="e.g. 'Complete beginner-friendly C programming handbook with exercises'..."
+                      className="w-full p-2.5 rounded-xl bg-bg-primary border border-border-primary text-xs text-text-primary focus:outline-none focus:border-brand-purple resize-none placeholder:text-text-muted"
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap gap-1">
+                    {[
+                      "Python Interview Guide",
+                      "Mindful Stoicism",
+                      "Cloud Microservices",
+                    ].map((ex, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setAiPrompt(ex)}
+                        className="text-[10px] px-2 py-0.5 rounded-md bg-bg-primary hover:bg-brand-purple/10 hover:text-brand-purple text-text-secondary border border-border-primary transition-colors truncate"
+                      >
+                        {ex}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div>
+                      <label className="text-[9px] font-bold uppercase text-text-muted block mb-0.5">Audience</label>
+                      <select
+                        value={aiAudience}
+                        onChange={(e) => setAiAudience(e.target.value)}
+                        className="w-full p-1.5 text-xs bg-bg-primary border border-border-primary rounded-lg text-text-primary focus:outline-none"
+                      >
+                        <option value="Beginners">Beginners</option>
+                        <option value="Engineers">Engineers</option>
+                        <option value="Students">Students</option>
+                        <option value="Professionals">Professionals</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[9px] font-bold uppercase text-text-muted block mb-0.5">Tone</label>
+                      <select
+                        value={aiTone}
+                        onChange={(e) => setAiTone(e.target.value)}
+                        className="w-full p-1.5 text-xs bg-bg-primary border border-border-primary rounded-lg text-text-primary focus:outline-none"
+                      >
+                        <option value="Friendly & Clear">Friendly</option>
+                        <option value="Professional & Formal">Professional</option>
+                        <option value="Academic">Academic</option>
+                        <option value="Creative">Creative</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    disabled={!aiPrompt.trim() || aiGenerating}
+                    className="w-full py-2.5 text-xs font-semibold rounded-xl shadow-xs"
+                  >
+                    {aiGenerating ? "Structuring eBook..." : "Generate eBook ✨"}
+                  </Button>
+                </form>
+              </div>
+
+              <div className="p-4 rounded-xl bg-bg-secondary/60 border border-border-primary space-y-2">
+                <span className="text-[11px] font-semibold text-text-primary flex items-center gap-1.5">
+                  <span>💡</span>
+                  <span>Publishing Pro Tip</span>
+                </span>
+                <p className="text-xs text-text-secondary leading-relaxed">
+                  Export to high-fidelity PDF with auto-generated cover pages and table of contents directly from the Editor workspace.
+                </p>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
       </main>
 
-      {/* Creation Modal */}
-      <Modal
-        isOpen={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
-        title="Create New eBook"
-      >
-        <form onSubmit={handleCreateSubmit} className="flex flex-col gap-5">
+      {/* MODAL: Manual Create eBook */}
+      <Modal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} title="Create New eBook" maxWidth="max-w-lg">
+        <form onSubmit={handleCreateSubmit} className="space-y-4 text-left">
           <InputField
             label="eBook Title"
             name="title"
@@ -734,9 +1048,9 @@ const DashboardPage = () => {
           />
 
           <TextAreaField
-            label="Initial Outline / Single Idea Prompt"
+            label="Initial Outline / Concept Prompt"
             name="prompt"
-            placeholder="Describe what your eBook is about or outline the chapters you want to generate..."
+            placeholder="Describe what your eBook is about or outline the chapters..."
             value={formValues.prompt}
             onChange={handleInputChange}
             error={formErrors.prompt}
@@ -744,55 +1058,71 @@ const DashboardPage = () => {
             required
           />
 
-          <Button
-            disabled={actionLoading}
-            type="submit"
-            variant="primary"
-            className="w-full h-[50px] bg-emerald-700 hover:bg-emerald-600 border-none text-[10px] font-bold tracking-wider rounded-xl transition-all duration-300 mt-2 flex items-center justify-center"
-          >
-            {actionLoading ? (
-              <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-            ) : (
-              "Initialize eBook Draft"
-            )}
-          </Button>
+          <div className="pt-2 flex items-center justify-end gap-2 border-t border-border-primary">
+            <button
+              type="button"
+              onClick={() => setIsCreateOpen(false)}
+              className="px-4 py-2 text-xs font-semibold text-text-secondary bg-bg-secondary hover:bg-bg-tertiary rounded-xl border border-border-primary"
+            >
+              Cancel
+            </button>
+            <Button type="submit" variant="primary" disabled={actionLoading} className="px-5 py-2 text-xs font-semibold rounded-xl">
+              {actionLoading ? "Creating..." : "Initialize eBook Draft ➔"}
+            </Button>
+          </div>
         </form>
       </Modal>
 
-      {/* Delete Confirmation Modal */}
-      <Modal
-        isOpen={isDeleteOpen}
-        onClose={() => {
-          setIsDeleteOpen(false);
-          setSelectedBook(null);
-        }}
-        title="Delete eBook"
-      >
-        <div className="flex flex-col gap-4 text-left">
-          <p className="text-text-secondary text-xs sm:text-sm font-medium leading-relaxed">
-            Are you sure you want to delete <strong className="text-text-primary">"{selectedBook?.title}"</strong>? This action is permanent and will delete all chapters and drafts.
-          </p>
-          <div className="flex items-center gap-3 mt-4">
+      {/* MODAL: Rename Book */}
+      <Modal isOpen={isRenameOpen} onClose={() => setIsRenameOpen(false)} title="Rename eBook" maxWidth="max-w-md">
+        <form onSubmit={handleRenameConfirm} className="space-y-4 text-left">
+          <div>
+            <label className="text-xs font-bold uppercase text-text-muted block mb-1">New Title</label>
+            <input
+              type="text"
+              required
+              value={renameTitle}
+              onChange={(e) => setRenameTitle(e.target.value)}
+              className="w-full text-xs sm:text-sm bg-bg-secondary border border-border-primary rounded-xl p-2.5 text-text-primary focus:outline-none"
+            />
+          </div>
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-border-primary">
             <button
-              onClick={() => {
-                setIsDeleteOpen(false);
-                setSelectedBook(null);
-              }}
+              type="button"
+              onClick={() => setIsRenameOpen(false)}
+              className="px-4 py-2 text-xs font-semibold text-text-secondary bg-bg-secondary rounded-xl border border-border-primary"
+            >
+              Cancel
+            </button>
+            <Button type="submit" variant="primary" disabled={actionLoading} className="px-5 py-2 text-xs font-semibold rounded-xl">
+              Save Title
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* MODAL: Delete Confirmation */}
+      <Modal isOpen={isDeleteOpen} onClose={() => setIsDeleteOpen(false)} title="Delete eBook" maxWidth="max-w-md">
+        <div className="space-y-4 text-left">
+          <p className="text-xs sm:text-sm text-text-secondary leading-relaxed">
+            Are you sure you want to delete <strong className="text-text-primary">"{selectedBook?.title}"</strong>? This will permanently remove all chapters and draft history.
+          </p>
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-border-primary">
+            <button
+              type="button"
+              onClick={() => setIsDeleteOpen(false)}
               disabled={actionLoading}
-              className="flex-1 h-[46px] border border-border-primary hover:border-text-primary text-text-secondary hover:text-text-primary bg-bg-primary text-[10px] font-bold tracking-wider rounded-xl transition-all uppercase cursor-pointer"
+              className="px-4 py-2 text-xs font-semibold text-text-secondary bg-bg-secondary rounded-xl border border-border-primary"
             >
               Cancel
             </button>
             <button
+              type="button"
               onClick={handleDeleteConfirm}
               disabled={actionLoading}
-              className="flex-1 h-[46px] bg-red-600 hover:bg-red-500 text-white text-[10px] font-bold tracking-wider rounded-xl transition-all uppercase cursor-pointer"
+              className="px-5 py-2 text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white rounded-xl shadow-xs"
             >
-              {actionLoading ? (
-                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto"></div>
-              ) : (
-                "Delete eBook"
-              )}
+              {actionLoading ? "Deleting..." : "Delete Permanently"}
             </button>
           </div>
         </div>
@@ -803,4 +1133,3 @@ const DashboardPage = () => {
 };
 
 export default DashboardPage;
-

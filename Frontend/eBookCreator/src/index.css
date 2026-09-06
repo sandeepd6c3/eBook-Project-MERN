@@ -82,6 +82,37 @@ h1, h2, h3, h4, h5, h6 {
   transition: color 0.25s ease;
 }
 
+/* 3D Transform Utilities & Perspective */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.perspective-1200 {
+  perspective: 1200px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+/* Subtle 3D floating animation */
+@keyframes floatGentle {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(0.5deg);
+  }
+}
+
+.animate-float-gentle {
+  animation: floatGentle 6s ease-in-out infinite;
+}
+
 /* Base custom styles for themed layout parts */
 .card-themed {
   background-color: var(--bg-secondary);
@@ -100,4 +131,13 @@ h1, h2, h3, h4, h5, h6 {
 .input-themed:focus {
   border-color: var(--accent-primary);
   outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

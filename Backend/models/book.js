@@ -1,5 +1,32 @@
 const mongoose = require("mongoose");
 
+const revisionSchema = new mongoose.Schema({
+    chapterId: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true,
+    },
+    chapterTitle: {
+        type: String,
+        default: "",
+    },
+    previousContent: {
+        type: String,
+        default: "",
+    },
+    newContent: {
+        type: String,
+        default: "",
+    },
+    operation: {
+        type: String,
+        default: "AI Edit", // e.g. "AI Edit", "Manual Edit", "AI Rewrite", "AI Expand"
+    },
+    timestamp: {
+        type: Date,
+        default: Date.now,
+    },
+});
+
 const chapterSchema = new mongoose.Schema({
     title: {
         type: String,
@@ -9,6 +36,23 @@ const chapterSchema = new mongoose.Schema({
     body: {
         type: String,
         default: "",
+    },
+    status: {
+        type: String,
+        enum: ["Draft", "Generated", "Edited"],
+        default: "Draft",
+    },
+    wordCount: {
+        type: Number,
+        default: 0,
+    },
+    order: {
+        type: Number,
+        default: 0,
+    },
+    updatedAt: {
+        type: Date,
+        default: Date.now,
     },
 });
 
@@ -45,6 +89,10 @@ const bookSchema = new mongoose.Schema(
             required: [true, "Book title is required"],
             trim: true,
         },
+        subtitle: {
+            type: String,
+            default: "",
+        },
         description: {
             type: String,
             default: "",
@@ -55,6 +103,7 @@ const bookSchema = new mongoose.Schema(
             required: [true, "Author reference is required"],
         },
         chapters: [chapterSchema],
+        revisions: [revisionSchema],
         coverImage: {
             type: String,
             default: "",
@@ -68,6 +117,10 @@ const bookSchema = new mongoose.Schema(
             default: 0,
         },
         reviews: [reviewSchema],
+        settings: {
+            type: mongoose.Schema.Types.Mixed,
+            default: {},
+        },
         exportConfig: {
             pageSize: { type: String, default: "letter" },
             marginStyle: { type: String, default: "normal" },

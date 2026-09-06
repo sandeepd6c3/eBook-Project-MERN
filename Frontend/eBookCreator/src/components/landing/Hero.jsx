@@ -1,189 +1,230 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import Button from "../ui/Button";
+import React, { useRef, useState } from "react";
+import { Link } from "react-router-dom";
 
 const Hero = () => {
-  const [topicInput, setTopicInput] = useState("");
-  const navigate = useNavigate();
+  const containerRef = useRef(null);
+  const [tiltStyle, setTiltStyle] = useState("");
+  const [isHovered, setIsHovered] = useState(false);
 
-  const handleQuickCreate = (e) => {
-    e.preventDefault();
-    if (topicInput.trim()) {
-      navigate(`/signup?topic=${encodeURIComponent(topicInput.trim())}`);
-    } else {
-      navigate("/signup");
-    }
+  const handleMouseMove = (e) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+
+    const rotateX = -((y - centerY) / centerY) * 4; // subtle 4deg tilt
+    const rotateY = ((x - centerX) / centerX) * 4;
+
+    setTiltStyle(
+      `perspective(1200px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) translateZ(10px)`
+    );
   };
 
-  const samplePrompts = [
-    "The 2026 AI Playbook for Solopreneurs",
-    "Mindful Stoicism: Daily Resilience Habits",
-    "Mastering Modern TypeScript & Cloud Architecture"
-  ];
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    setTiltStyle("perspective(1200px) rotateX(2deg) rotateY(0deg) translateZ(0px)");
+  };
 
   return (
-    <section className="relative bg-bg-secondary overflow-x-hidden pt-10 pb-20 md:pt-16 md:pb-28 border-b border-border-primary flex flex-col transition-colors duration-250">
-      {/* Dynamic ambient gradients */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-brand-purple/10 blur-[100px] rounded-full pointer-events-none"></div>
-      <div className="absolute bottom-10 right-1/4 w-96 h-96 bg-brand-blue/10 blur-[100px] rounded-full pointer-events-none"></div>
+    <section className="relative bg-bg-primary pt-16 pb-20 md:pt-24 md:pb-28 border-b border-border-primary overflow-hidden transition-colors duration-250">
       
-      {/* Main Hero Container */}
-      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center relative z-10 w-full">
+      {/* Subtle Floating Paper / Particle Background Elements */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden select-none -z-0">
+        <div 
+          className="absolute top-16 left-[10%] w-24 h-32 rounded-lg bg-border-primary/25 border border-border-primary/30 rotate-12 animate-float-gentle opacity-40 blur-[0.5px]"
+          style={{ animationDuration: "8s" }}
+        />
+        <div 
+          className="absolute top-48 right-[12%] w-28 h-36 rounded-lg bg-brand-purple/[0.04] border border-brand-purple/10 -rotate-6 animate-float-gentle opacity-50 blur-[0.5px]"
+          style={{ animationDuration: "10s", animationDelay: "1s" }}
+        />
+        <div 
+          className="absolute bottom-20 left-[18%] w-16 h-20 rounded-md bg-border-primary/20 border border-border-primary/30 -rotate-12 animate-float-gentle opacity-30"
+          style={{ animationDuration: "7s", animationDelay: "2s" }}
+        />
+      </div>
+
+      <div className="max-w-6xl mx-auto px-6 flex flex-col items-center text-center relative z-10">
         
-        {/* Left Column (Content & Interactive Try Prompt) */}
-        <div className="lg:col-span-6 flex flex-col items-start text-left">
-          
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-purple/10 border border-brand-purple/20 text-brand-purple text-[11px] font-bold tracking-wider uppercase mb-6 shadow-xs">
-            <span className="w-2 h-2 rounded-full bg-brand-purple animate-ping"></span>
-            Next-Gen AI Book Authoring
-          </div>
-          
-          <h1 className="font-display font-light text-4xl sm:text-5xl lg:text-6xl text-text-primary leading-[1.12] tracking-tight mb-6">
-            From Idea to <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-purple to-brand-blue font-semibold italic">
-              Published eBook
-            </span> <br />
-            in Minutes.
-          </h1>
-          
-          <p className="max-w-xl text-text-secondary text-sm sm:text-base leading-relaxed mb-8">
-            Turn any title, prompt, or outline into a complete, beautifully structured, and publication-ready digital book with automated chapters, custom covers, and multi-format exports.
-          </p>
-
-          {/* Interactive Fast-Prompt Input Box */}
-          <form onSubmit={handleQuickCreate} className="w-full max-w-lg mb-4">
-            <div className="relative flex flex-col sm:flex-row items-stretch gap-2 p-1.5 bg-bg-primary rounded-2xl border border-border-primary shadow-lg shadow-brand-purple/5 focus-within:border-brand-purple focus-within:ring-2 focus-within:ring-brand-purple/20 transition-all">
-              <div className="flex items-center pl-3 flex-grow gap-2">
-                <svg className="w-4 h-4 text-brand-purple shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                <input
-                  type="text"
-                  value={topicInput}
-                  onChange={(e) => setTopicInput(e.target.value)}
-                  placeholder="Enter your book topic or title..."
-                  className="w-full py-2.5 bg-transparent text-xs sm:text-sm text-text-primary focus:outline-none placeholder:text-text-muted"
-                />
-              </div>
-              <Button type="submit" variant="primary" className="rounded-xl px-5 py-3 text-xs font-bold tracking-wider whitespace-nowrap shadow-sm">
-                Generate eBook ✨
-              </Button>
-            </div>
-          </form>
-
-          {/* Sample Prompts Pills */}
-          <div className="w-full max-w-lg flex flex-wrap items-center gap-1.5 mb-8">
-            <span className="text-[10px] uppercase font-bold text-text-muted mr-1">Try:</span>
-            {samplePrompts.map((prompt, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => setTopicInput(prompt)}
-                className="text-[11px] px-2.5 py-1 rounded-lg bg-bg-tertiary hover:bg-brand-purple/10 hover:text-brand-purple text-text-secondary transition-colors text-left truncate max-w-[280px]"
-              >
-                "{prompt}"
-              </button>
-            ))}
-          </div>
-
-          {/* Key Metrics Banner */}
-          <div className="w-full max-w-lg border-t border-border-primary pt-6">
-            <div className="grid grid-cols-3 gap-4">
-              <div className="flex flex-col">
-                <span className="font-display font-bold text-text-primary text-lg sm:text-xl">100% Free</span>
-                <span className="text-[11px] text-text-muted">Full AI Access</span>
-              </div>
-              <div className="flex flex-col border-l border-border-primary pl-4">
-                <span className="font-display font-bold text-text-primary text-lg sm:text-xl">4 Formats</span>
-                <span className="text-[11px] text-text-muted">PDF, EPUB, DOCX, MD</span>
-              </div>
-              <div className="flex flex-col border-l border-border-primary pl-4">
-                <span className="font-display font-bold text-text-primary text-lg sm:text-xl">Full Rights</span>
-                <span className="text-[11px] text-text-muted">Commercial & KDP</span>
-              </div>
-            </div>
-          </div>
-
+        {/* Subtle Category Tag */}
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-bg-secondary border border-border-primary text-text-secondary text-xs font-medium mb-6">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          Intelligent Book Authoring & Publishing Platform
         </div>
 
-        {/* Right Column: Live Mockup Card & Visual */}
-        <div className="lg:col-span-6 flex justify-center lg:justify-end relative w-full items-center">
-          <div className="relative w-full max-w-lg">
-            
-            {/* Background ambient glow */}
-            <div className="absolute -inset-1.5 bg-gradient-to-r from-brand-purple to-brand-blue rounded-3xl blur-xl opacity-20 group-hover:opacity-40 transition duration-1000"></div>
-            
-            {/* Main Interactive Preview Container */}
-            <div className="relative bg-bg-primary rounded-2xl border border-border-primary shadow-2xl overflow-hidden p-5 sm:p-7">
-              
-              {/* Header Bar */}
-              <div className="flex items-center justify-between pb-4 mb-5 border-b border-border-primary">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-rose-500/80"></div>
-                  <div className="w-3 h-3 rounded-full bg-amber-500/80"></div>
-                  <div className="w-3 h-3 rounded-full bg-emerald-500/80"></div>
-                  <span className="text-[11px] font-mono text-text-muted ml-2">eBookStudio AI • Live Preview</span>
-                </div>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                  Ready to Export
-                </span>
+        {/* Clear, Confident Headline */}
+        <h1 className="font-display text-4xl sm:text-5xl md:text-6xl text-text-primary tracking-tight max-w-3xl leading-[1.12] mb-6">
+          Write, edit, and publish complete books with AI assistance.
+        </h1>
+
+        {/* Supporting Copy */}
+        <p className="max-w-2xl text-text-secondary text-base sm:text-lg leading-relaxed mb-8">
+          Turn your ideas, outlines, or knowledge into structured, beautifully formatted digital books. Complete with real-time editing, cover design, and multi-format exports.
+        </p>
+
+        {/* Intentional CTAs */}
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto mb-16">
+          <Link
+            to="/signup"
+            className="w-full sm:w-auto px-6 py-3 rounded-lg bg-text-primary text-bg-primary text-xs sm:text-sm font-semibold hover:opacity-90 transition-opacity shadow-sm text-center"
+          >
+            Create your eBook
+          </Link>
+          <a
+            href="#preview"
+            className="w-full sm:w-auto px-6 py-3 rounded-lg bg-bg-secondary border border-border-primary text-text-primary text-xs sm:text-sm font-medium hover:bg-bg-tertiary transition-colors text-center"
+          >
+            See how it works ↓
+          </a>
+        </div>
+
+        {/* 3D Realistic Interactive Product Preview with 3D Book & Parallax */}
+        <div
+          ref={containerRef}
+          onMouseMove={handleMouseMove}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={handleMouseLeave}
+          style={{
+            transform: tiltStyle || "perspective(1200px) rotateX(2deg) rotateY(0deg)",
+            transition: isHovered ? "transform 0.15s ease-out" : "transform 0.7s ease-out",
+            transformStyle: "preserve-3d",
+          }}
+          className="w-full max-w-5xl rounded-xl border border-border-primary bg-bg-secondary shadow-2xl overflow-hidden text-left"
+        >
+          
+          {/* Editor Window Bar */}
+          <div className="px-4 py-3 bg-bg-primary border-b border-border-primary flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-border-primary"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-border-primary"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-border-primary"></div>
               </div>
-
-              {/* Book Showcase Grid inside card */}
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-5 items-center">
-                {/* Book Cover Thumbnail */}
-                <div className="sm:col-span-5 aspect-[3/4] bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 rounded-xl p-4 flex flex-col justify-between text-white shadow-md relative overflow-hidden group">
-                  <div className="absolute -right-8 -top-8 w-24 h-24 bg-brand-blue/30 rounded-full blur-xl"></div>
-                  <div className="text-[8px] font-bold tracking-widest uppercase opacity-80">Vol. 01 • Bestseller Edition</div>
-                  <div>
-                    <div className="h-0.5 w-6 bg-brand-purple mb-2"></div>
-                    <h3 className="font-display font-bold text-sm sm:text-base leading-tight">Mastering AI Workflows</h3>
-                    <p className="text-[9px] opacity-75 mt-1 font-sans">Architecting next-gen digital systems</p>
-                  </div>
-                  <div className="flex items-center justify-between text-[8px] opacity-80 border-t border-white/10 pt-2">
-                    <span>eBookAI Studio</span>
-                    <span>2026</span>
-                  </div>
-                </div>
-
-                {/* Chapter Outline Summary */}
-                <div className="sm:col-span-7 flex flex-col gap-2.5 text-left">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-text-primary">Generated Outline</span>
-                    <span className="text-[10px] text-brand-purple font-semibold">12 Chapters Complete</span>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="p-2 rounded-lg bg-bg-secondary border border-border-primary flex items-center justify-between">
-                      <span className="text-xs text-text-primary font-medium truncate">1. Foundations of Prompt Systems</span>
-                      <span className="text-[10px] text-emerald-600 font-bold ml-2">1,840 w</span>
-                    </div>
-                    <div className="p-2 rounded-lg bg-bg-secondary border border-border-primary flex items-center justify-between">
-                      <span className="text-xs text-text-primary font-medium truncate">2. Asynchronous Narrative Loops</span>
-                      <span className="text-[10px] text-emerald-600 font-bold ml-2">2,150 w</span>
-                    </div>
-                    <div className="p-2 rounded-lg bg-bg-secondary border border-border-primary flex items-center justify-between">
-                      <span className="text-xs text-text-primary font-medium truncate">3. Multi-Format Output Engines</span>
-                      <span className="text-[10px] text-emerald-600 font-bold ml-2">1,920 w</span>
-                    </div>
-                  </div>
-
-                  <div className="pt-2 flex items-center gap-2">
-                    <Link to="/signup" className="flex-1">
-                      <Button variant="primary" className="w-full py-2.5 text-[11px] font-bold rounded-lg">
-                        Open in Editor
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              </div>
-
+              <span className="text-[11px] text-text-muted font-medium ml-2">
+                eBookStudio — Mastering Cloud Architecture.epub
+              </span>
             </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-mono">Saved ✓</span>
+              <span className="text-[11px] px-2 py-0.5 rounded bg-bg-secondary border border-border-primary text-text-secondary">
+                PDF / EPUB / DOCX
+              </span>
+            </div>
+          </div>
+
+          {/* Realistic 3-Column Interface Preview with 3D Depth */}
+          <div className="grid grid-cols-12 min-h-[400px] bg-bg-primary divide-x divide-border-primary">
+            
+            {/* Column 1: Left Table of Contents & 3D Mini Book Cover */}
+            <div className="hidden md:block md:col-span-3 p-4 bg-bg-secondary/50 space-y-4">
+              
+              {/* 3D Mini Book Cover Card */}
+              <div className="p-3 rounded-xl bg-bg-primary border border-border-primary shadow-sm flex items-center gap-3 group">
+                <div 
+                  className="w-12 h-16 rounded-r bg-gradient-to-tr from-indigo-900 via-purple-900 to-slate-900 text-white p-1.5 flex flex-col justify-between shadow-md border-l-2 border-black/40 group-hover:scale-105 group-hover:-rotate-2 transition-transform duration-300 shrink-0"
+                >
+                  <div className="text-[5px] uppercase font-mono opacity-70">VOL 01</div>
+                  <div className="text-[7px] font-bold leading-none">Cloud Arch</div>
+                  <div className="text-[5px] opacity-60 font-mono">2026</div>
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold text-text-primary truncate">Cloud Architecture</div>
+                  <div className="text-[10px] text-text-muted">Alex Morgan</div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pb-1 border-b border-border-primary">
+                <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Chapters</span>
+                <span className="text-[11px] text-text-muted font-mono">1,840 words</span>
+              </div>
+
+              {/* Interactive Hovering Chapter Items */}
+              <div className="space-y-1 text-xs">
+                <div className="p-2 rounded-md bg-bg-primary border border-border-primary font-medium text-text-primary shadow-xs flex items-center justify-between hover:translate-x-1 transition-transform">
+                  <span className="truncate">01. Distributed Systems</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                </div>
+                <div className="p-2 rounded-md hover:bg-bg-primary text-text-secondary transition-all hover:translate-x-1 truncate">
+                  02. Event-Driven Messaging
+                </div>
+                <div className="p-2 rounded-md hover:bg-bg-primary text-text-secondary transition-all hover:translate-x-1 truncate">
+                  03. High Availability Patterns
+                </div>
+                <div className="p-2 rounded-md hover:bg-bg-primary text-text-secondary transition-all hover:translate-x-1 truncate">
+                  04. Cloud Deployment
+                </div>
+              </div>
+            </div>
+
+            {/* Column 2: Center Editor Canvas */}
+            <div className="col-span-12 md:col-span-6 p-6 sm:p-8 flex flex-col justify-between bg-bg-primary">
+              <div className="space-y-3">
+                {/* Formatting bar mockup */}
+                <div className="flex items-center gap-2 pb-3 border-b border-border-primary text-text-muted text-xs">
+                  <span className="font-bold text-text-primary">H1</span>
+                  <span className="font-bold text-text-primary">H2</span>
+                  <span>B</span>
+                  <span className="italic">I</span>
+                  <span>Code</span>
+                  <span>Quote</span>
+                  <span>List</span>
+                </div>
+
+                <h2 className="font-display text-xl sm:text-2xl font-bold text-text-primary">
+                  Chapter 1: Principles of Distributed Resiliency
+                </h2>
+                
+                <p className="text-xs sm:text-sm text-text-secondary leading-relaxed">
+                  Building fault-tolerant software at scale requires decoupling stateful services from real-time computational workloads. In modern cloud architecture, failure is an inevitable operating condition rather than an edge case.
+                </p>
+
+                <div className="p-3 rounded-lg bg-bg-secondary border border-border-primary text-xs font-mono text-text-secondary">
+                  // Event circuit breaker configuration<br/>
+                  const breaker = new CircuitBreaker(fetchUserData, options);
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-border-primary flex items-center justify-between text-[11px] text-text-muted">
+                <span>Page 1 of 18</span>
+                <span>Reading time: ~4 min</span>
+              </div>
+            </div>
+
+            {/* Column 3: Right AI Assistant */}
+            <div className="hidden md:block md:col-span-3 p-4 bg-bg-secondary/50 space-y-3">
+              <div className="flex items-center gap-1.5 pb-2 border-b border-border-primary text-xs font-semibold text-text-primary">
+                <span>✨</span>
+                <span>AI Writing Assistant</span>
+              </div>
+
+              <div className="p-2.5 rounded-lg bg-bg-primary border border-border-primary space-y-1.5 text-xs shadow-xs">
+                <span className="text-[10px] font-bold uppercase text-text-muted">Applied Instruction:</span>
+                <p className="text-text-primary text-[11px] italic">"Add real-world failure scenario example..."</p>
+                <div className="pt-1 flex gap-1.5">
+                  <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-medium">
+                    Accepted ✓
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-1 text-[11px]">
+                <span className="text-text-muted font-medium">Quick Actions:</span>
+                <div className="p-1.5 rounded bg-bg-primary border border-border-primary text-text-secondary hover:text-text-primary hover:border-brand-purple/30 cursor-pointer transition-all">
+                  Add 3 Practice Exercises
+                </div>
+                <div className="p-1.5 rounded bg-bg-primary border border-border-primary text-text-secondary hover:text-text-primary hover:border-brand-purple/30 cursor-pointer transition-all">
+                  Simplify for Beginners
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
 
       </div>
-
     </section>
   );
 };

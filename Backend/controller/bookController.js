@@ -4,18 +4,30 @@ const Book = require("../models/book");
 // @route   POST /api/books
 // @access  Private
 const createBook = async (req, res) => {
-    const { title, description, coverImage, chapters } = req.body;
+    const { title, subtitle, description, coverImage, chapters, settings, exportConfig } = req.body;
 
     try {
         if (!title) {
             return res.status(400).json({ message: "Book title is required" });
         }
 
+        const formattedChapters = (chapters || []).map((ch, idx) => ({
+            title: ch.title,
+            body: ch.body || "",
+            status: ch.status || "Draft",
+            wordCount: ch.wordCount || (ch.body ? ch.body.replace(/<[^>]*>/g, " ").trim().split(/\s+/).filter(Boolean).length : 0),
+            order: ch.order !== undefined ? ch.order : idx,
+            updatedAt: ch.updatedAt || new Date(),
+        }));
+
         const book = await Book.create({
             title,
+            subtitle: subtitle || "",
             description: description || "",
             coverImage: coverImage || "",
-            chapters: chapters || [],
+            chapters: formattedChapters,
+            settings: settings || {},
+            exportConfig: exportConfig || {},
             author: req.user._id,
         });
 
@@ -66,7 +78,7 @@ const getBookById = async (req, res) => {
 // @route   PUT /api/books/:id
 // @access  Private
 const updateBook = async (req, res) => {
-    const { title, description, coverImage, chapters, isPublished, exportConfig } = req.body;
+    const { title, subtitle, description, coverImage, chapters, isPublished, settings, exportConfig } = req.body;
 
     try {
         const book = await Book.findById(req.params.id);
@@ -82,11 +94,24 @@ const updateBook = async (req, res) => {
 
         // Update fields if provided
         if (title !== undefined) book.title = title;
+        if (subtitle !== undefined) book.subtitle = subtitle;
         if (description !== undefined) book.description = description;
         if (coverImage !== undefined) book.coverImage = coverImage;
-        if (chapters !== undefined) book.chapters = chapters;
         if (isPublished !== undefined) book.isPublished = isPublished;
+        if (settings !== undefined) book.settings = settings;
         if (exportConfig !== undefined) book.exportConfig = exportConfig;
+
+        if (chapters !== undefined) {
+            book.chapters = chapters.map((ch, idx) => ({
+                _id: ch._id,
+                title: ch.title,
+                body: ch.body || "",
+                status: ch.status || (ch.body && ch.body.length > 50 ? "Edited" : "Draft"),
+                wordCount: ch.wordCount || (ch.body ? ch.body.replace(/<[^>]*>/g, " ").trim().split(/\s+/).filter(Boolean).length : 0),
+                order: ch.order !== undefined ? ch.order : idx,
+                updatedAt: new Date(),
+            }));
+        }
 
         const updatedBook = await book.save();
         res.json(updatedBook);
@@ -117,6 +142,72 @@ const deleteBook = async (req, res) => {
     } catch (error) {
         console.error("Delete book error:", error);
         res.status(500).json({ message: "Server error deleting book", error: error.message });
+    }
+};
+
+// @desc    Add a revision to a book chapter
+// @route   POST /api/books/:id/revisions
+// @access  Private
+const addRevision = async (req, res) => {
+    const { chapterId, chapterTitle, previousContent, newContent, operation } = req.body;
+
+    try {
+        const book = await Book.findById(req.params.id);
+
+        if (!book) {
+            return res.status(404).json({ message: "Book not found" });
+        }
+
+        if (book.author.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: "Not authorized" });
+        }
+
+        const revision = {
+            chapterId,
+            chapterTitle: chapterTitle || "Chapter",
+            previousContent: previousContent || "",
+            newContent: newContent || "",
+            operation: operation || "AI Edit",
+            timestamp: new Date(),
+        };
+
+        if (!book.revisions) {
+            book.revisions = [];
+        }
+
+        // Keep last 50 revisions
+        book.revisions.unshift(revision);
+        if (book.revisions.length > 50) {
+            book.revisions = book.revisions.slice(0, 50);
+        }
+
+        await book.save();
+        res.status(201).json({ message: "Revision saved", revision, revisions: book.revisions });
+    } catch (error) {
+        console.error("Add revision error:", error);
+        res.status(500).json({ message: "Server error saving revision", error: error.message });
+    }
+};
+
+// @desc    Get revisions for a book
+// @route   GET /api/books/:id/revisions
+// @access  Private
+const getRevisions = async (req, res) => {
+    try {
+        const book = await Book.findById(req.params.id);
+
+        if (!book) {
+            return res.status(404).json({ message: "Book not found" });
+        }
+
+        if (book.author.toString() !== req.user._id.toString() && !book.isPublished) {
+            return res.status(403).json({ message: "Not authorized" });
+        }
+
+        res.json(book.revisions || []);
+    } catch (error) {
+        console.error("Get revisions error:", error);
+        res.status(500).json({ message: "Server error fetching revisions", error: error.message });
     }
 };
 
@@ -241,6 +332,8 @@ module.exports = {
     getBookById,
     updateBook,
     deleteBook,
+    addRevision,
+    getRevisions,
     getPublicBooks,
     incrementReadCount,
     addBookReview,

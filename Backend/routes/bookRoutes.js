@@ -6,6 +6,8 @@ const {
     getBookById,
     updateBook,
     deleteBook,
+    addRevision,
+    getRevisions,
     getPublicBooks,
     incrementReadCount,
     addBookReview,
@@ -19,6 +21,10 @@ router.use(protect);
 router.get("/public", getPublicBooks);
 router.post("/:id/read", incrementReadCount);
 router.post("/:id/reviews", addBookReview);
+
+// Revision history routes
+router.post("/:id/revisions", addRevision);
+router.get("/:id/revisions", getRevisions);
 
 router.route("/")
     .post(createBook)
